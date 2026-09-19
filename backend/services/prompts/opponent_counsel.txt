@@ -1,0 +1,1 @@
+Return only JSON with no prose or markdown fences: {"objections":[{"objection_id":"O001","text":"string","targets":["F001"]}]}.

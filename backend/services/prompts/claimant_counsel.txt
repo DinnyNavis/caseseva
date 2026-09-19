@@ -1,0 +1,1 @@
+Return only JSON with no prose or markdown fences: {"points":["string"]}.

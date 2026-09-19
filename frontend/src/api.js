@@ -1,0 +1,124 @@
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+export const SESSION_KEY = "caseseva_session_token";
+
+export function getToken() {
+  return window.localStorage.getItem(SESSION_KEY);
+}
+
+export function setToken(token) {
+  window.localStorage.setItem(SESSION_KEY, token);
+}
+
+export function clearToken() {
+  window.localStorage.removeItem(SESSION_KEY);
+}
+
+async function request(path, options = {}, { redirectOn401 = true } = {}) {
+  const headers = new Headers(options.headers || {});
+  if (!(options.body instanceof FormData)) headers.set("Content-Type", "application/json");
+  const token = getToken();
+  if (token) headers.set("Authorization", "Bearer " + token);
+  const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+  const contentType = response.headers.get("content-type") || "";
+  const body = contentType.includes("application/json") ? await response.json() : null;
+  if (response.status === 401 && redirectOn401) {
+    clearToken();
+    if (window.location.pathname !== "/login") window.location.assign("/login");
+  }
+  if (!response.ok) {
+    const error = new Error(body?.detail?.message || body?.detail || `Request failed with status ${response.status}`);
+    error.status = response.status;
+    error.fields = body?.detail?.fields || {};
+    throw error;
+  }
+  return body;
+}
+
+export const getHealth = () => request("/api/health", {}, { redirectOn401: false });
+
+export const signup = (payload) =>
+  request("/api/auth/signup", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }, { redirectOn401: false });
+
+export const login = (payload) =>
+  request("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }, { redirectOn401: false });
+
+export const logout = () => request("/api/auth/logout", { method: "POST" });
+
+export const getMe = () => request("/api/auth/me");
+
+export const updateProfile = (payload) =>
+  request("/api/auth/me", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+
+export const createCase = () => request("/api/cases", { method: "POST" });
+export const listCases = () => request("/api/cases");
+export const getCase = (caseId) => request(`/api/cases/${caseId}`);
+export const updateCase = (caseId, payload) =>
+  request(`/api/cases/${caseId}`, { method: "PATCH", body: JSON.stringify(payload) });
+export const submitCase = (caseId) =>
+  request(`/api/cases/${caseId}/submit`, { method: "POST" });
+export const deleteCase = (caseId) =>
+  request(`/api/cases/${caseId}`, { method: "DELETE" });
+export const uploadEvidence = (caseId, file, description = "") => {
+  const form = new FormData();
+  form.append("file", file, file.name);
+  form.append("description", description);
+  return request(`/api/cases/${caseId}/evidence`, { method: "POST", body: form });
+};
+export const deleteEvidence = (caseId, evidenceId) =>
+  request(`/api/cases/${caseId}/evidence/${evidenceId}`, { method: "DELETE" });
+export const updateEvidence = (caseId, evidenceId, description) =>
+  request(`/api/cases/${caseId}/evidence/${evidenceId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ description }),
+  });
+export const startAnalysis = (caseId) => request(`/api/cases/${caseId}/analyze`, { method: "POST" });
+export const retryAnalysis = (caseId) => request(`/api/cases/${caseId}/analyze/retry`, { method: "POST" });
+export const getCaseStatus = (caseId) => request(`/api/cases/${caseId}/status`);
+export const getPreview1 = (caseId) => request(`/api/cases/${caseId}/preview1`);
+export const editFact = (caseId, factId, payload) => request(`/api/cases/${caseId}/facts/${factId}`, { method: "PATCH", body: JSON.stringify(payload) });
+export const addFact = (caseId, payload) => request(`/api/cases/${caseId}/facts`, { method: "POST", body: JSON.stringify(payload) });
+export const editTimeline = (caseId, eventId, payload) => request(`/api/cases/${caseId}/timeline/${eventId}`, { method: "PATCH", body: JSON.stringify(payload) });
+export const editParties = (caseId, payload) => request(`/api/cases/${caseId}/parties`, { method: "PATCH", body: JSON.stringify(payload) });
+export const approvePreview1 = (caseId) => request(`/api/cases/${caseId}/preview1/approve`, { method: "POST" });
+export const rerunPreview1 = (caseId) => request(`/api/cases/${caseId}/preview1/rerun`, { method: "POST" });
+export const startLegalAnalysis = (caseId) => request(`/api/cases/${caseId}/legal-analysis`, { method: "POST" });
+export const getPreview2 = (caseId) => request(`/api/cases/${caseId}/preview2`);
+export const approvePreview2 = (caseId, proceedWithoutDocuments = false) =>
+  request(`/api/cases/${caseId}/preview2/approve`, { method: "POST", body: JSON.stringify({ proceed_without_documents: proceedWithoutDocuments }) });
+export const resolveDocumentRequest = (caseId, requestId, file) => {
+  const form = new FormData();
+  form.append("file", file, file.name);
+  return request(`/api/cases/${caseId}/evidence-request/${requestId}/resolve`, { method: "POST", body: form });
+};
+export const correctPreview2Fact = (caseId, factId, text) =>
+  request(`/api/cases/${caseId}/preview2/facts/${factId}`, { method: "PATCH", body: JSON.stringify({ text }) });
+export const listAdvocates = (filters = {}) => request(`/api/advocates?${new URLSearchParams(filters)}`);
+export const requestAdvocate = (caseId, advocateId) => request(`/api/cases/${caseId}/request-advocate`, { method: "POST", body: JSON.stringify({ advocate_id: advocateId }) });
+export const cancelAdvocateRequest = (caseId) => request(`/api/cases/${caseId}/cancel-advocate-request`, { method: "POST" });
+export const verifyAdvocate = (advocateId, status) => request(`/api/admin/advocates/${advocateId}/verification`, { method: "POST", headers: { "X-Admin-Token": "caseseva-admin" }, body: JSON.stringify({ status }) });
+export const listAdminAdvocates = () => request("/api/admin/advocates", { headers: { "X-Admin-Token": "caseseva-admin" } });
+export const getAdvocateRequests = () => request("/api/advocate/requests");
+export const acceptAdvocateRequest = (caseId) => request(`/api/advocate/requests/${caseId}/accept`, { method: "POST" });
+export const declineAdvocateRequest = (caseId, reason = "") => request(`/api/advocate/requests/${caseId}/decline?reason=${encodeURIComponent(reason)}`, { method: "POST" });
+export const getAdvocateCase = (caseId) => request(`/api/advocate/cases/${caseId}`);
+export const approveAdvocateFact = (caseId, factId) => request(`/api/advocate/cases/${caseId}/facts/${factId}/approve`, { method: "POST" });
+export const removeAdvocateProvision = (caseId, provisionId) => request(`/api/advocate/cases/${caseId}/provisions/${provisionId}/remove`, { method: "POST" });
+export const approveAdvocateProvision = (caseId, provisionId) => request(`/api/advocate/cases/${caseId}/provisions/${provisionId}/approve`, { method: "POST" });
+export const saveAdvocateNote = (caseId, note) => request(`/api/advocate/cases/${caseId}/review-note`, { method: "POST", body: JSON.stringify({ note }) });
+export const finalizeAdvocateCase = (caseId) => request(`/api/cases/${caseId}/advocate/finalize`, { method: "POST" });
+export const generateDocuments = (caseId) => request(`/api/cases/${caseId}/documents/generate`, { method: "POST" });
+export const regenerateDocuments = (caseId) => request(`/api/cases/${caseId}/documents/regenerate`, { method: "POST" });
+export const listDocuments = (caseId) => request(`/api/cases/${caseId}/documents`);
+export const getDocument = (caseId, documentId) => request(`/api/cases/${caseId}/documents/${documentId}`);
+export const getDocumentConsistency = (caseId, documentId) => request(`/api/cases/${caseId}/documents/${documentId}/consistency`);
+export const overrideDocumentConsistency = (caseId, documentId, reason) => request(`/api/cases/${caseId}/documents/${documentId}/override-consistency`, { method: "POST", body: JSON.stringify({ reason }) });
+export const documentDownloadUrl = (caseId, documentId) => `${API_BASE_URL}/api/cases/${caseId}/documents/${documentId}/download`;

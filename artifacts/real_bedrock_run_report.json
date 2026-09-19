@@ -1,0 +1,1587 @@
+{
+  "first_time_pass": [
+    "FACT_EXTRACTION",
+    "TIMELINE_CONSTRUCTION",
+    "PARTY_IDENTIFICATION",
+    "DOMAIN_ROUTER",
+    "LEGAL_ISSUE_IDENTIFICATION",
+    "STATUTE_RETRIEVAL",
+    "CITATION_VERIFICATION",
+    "JURISDICTION_FORUM",
+    "LIMITATION_CHECK",
+    "EVIDENCE_ISSUE_MAPPING",
+    "CLAIMANT_COUNSEL",
+    "OPPONENT_COUNSEL",
+    "EVIDENCE_CHALLENGER"
+  ],
+  "retry_pass": [],
+  "failed_outright": [],
+  "total_input_tokens": 9717,
+  "total_output_tokens": 10321,
+  "total_cost_usd": 0.061322,
+  "logs": [
+    {
+      "stage": "fact_extraction",
+      "prompt_sent": "Extract all key material facts from the following consumer story and evidence.\n\nCLIENT STORY:\nI purchased a gaming laptop online for Rs. 78,999 on 1 August 2026 for personal use. The laptop was delivered on 3 August 2026. However, starting 7 August 2026, it began shutting down repeatedly. I brought it to an authorized service centre, and the job sheet states a motherboard fault. I contacted the seller requesting a full replacement as per the return policy for manufacturing defects, but the seller refused replacement and offered only repair.\n\nUPLOADED EVIDENCE:\n- [E001] purchase_invoice.pdf: Purchase invoice for gaming laptop Rs. 78,999 delivered 3 Aug 2026\n- [E002] service_jobsheet.pdf: Authorized service centre job sheet showing motherboard fault dated 7 Aug 2026\n- [E003] seller_refusal_email.pdf: Email correspondence where seller refused replacement and offered only repair\n\nSchema and format instructions:\nReturn only JSON matching this exact schema, with no prose and no markdown fences:\n{\"facts\":[{\"fact_id\":\"F001\",\"text\":\"string\",\"confidence\":0.0,\"evidence_ids\":[\"E001\"],\"human_corrected\":false,\"removed\":false}]}\nUse a confidence between 0 and 1 and preserve the sequential F### format.",
+      "expected_schema": {
+        "$defs": {
+          "Fact": {
+            "properties": {
+              "fact_id": {
+                "title": "Fact Id",
+                "type": "string"
+              },
+              "text": {
+                "title": "Text",
+                "type": "string"
+              },
+              "confidence": {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "title": "Confidence",
+                "type": "number"
+              },
+              "evidence_ids": {
+                "default": [],
+                "items": {
+                  "type": "string"
+                },
+                "title": "Evidence Ids",
+                "type": "array"
+              },
+              "human_corrected": {
+                "default": false,
+                "title": "Human Corrected",
+                "type": "boolean"
+              },
+              "removed": {
+                "default": false,
+                "title": "Removed",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "fact_id",
+              "text",
+              "confidence"
+            ],
+            "title": "Fact",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "facts": {
+            "items": {
+              "$ref": "#/$defs/Fact"
+            },
+            "title": "Facts",
+            "type": "array"
+          }
+        },
+        "required": [
+          "facts"
+        ],
+        "title": "FactExtractionOutput",
+        "type": "object"
+      },
+      "attempt_1": {
+        "raw": "```json\n{\n  \"facts\": [\n    {\n      \"fact_id\": \"F001\",\n      \"text\": \"Gaming laptop purchased online for Rs. 78,999\",\n      \"confidence\": 0.95,\n      \"evidence_ids\": [\"E001\"],\n      \"human_corrected\": false,\n      \"removed\": false\n    },\n    {\n      \"fact_id\": \"F002\",\n      \"text\": \"Purchase date: 1 August 2026\",\n      \"confidence\": 0.95,\n      \"evidence_ids\": [\"E001\"],\n      \"human_corrected\": false,\n      \"removed\": false\n    },\n    {\n      \"fact_id\": \"F003\",\n      \"text\": \"Delivery date: 3 August 2026\",\n      \"confidence\": 0.95,\n      \"evidence_ids\": [\"E001\"],\n      \"human_corrected\": false,\n      \"removed\": false\n    },\n    {\n      \"fact_id\": \"F004\",\n      \"text\": \"Laptop began shutting down repeatedly starting 7 August 2026\",\n      \"confidence\": 0.9,\n      \"evidence_ids\": [\"E002\"],\n      \"human_corrected\": false,\n      \"removed\": false\n    },\n    {\n      \"fact_id\": \"F005\",\n      \"text\": \"Authorized service centre diagnosed motherboard fault\",\n      \"confidence\": 0.95,\n      \"evidence_ids\": [\"E002\"],\n      \"human_corrected\": false,\n      \"removed\": false\n    },\n    {\n      \"fact_id\": \"F006\",\n      \"text\": \"Service job sheet dated 7 August 2026\",\n      \"confidence\": 0.95,\n      \"evidence_ids\": [\"E002\"],\n      \"human_corrected\": false,\n      \"removed\": false\n    },\n    {\n      \"fact_id\": \"F007\",\n      \"text\": \"Consumer requested full replacement from seller citing return policy for manufacturing defects\",\n      \"confidence\": 0.9,\n      \"evidence_ids\": [\"E003\"],\n      \"human_corrected\": false,\n      \"removed\": false\n    },\n    {\n      \"fact_id\": \"F008\",\n      \"text\": \"Seller refused replacement and offered only repair\",\n      \"confidence\": 0.95,\n      \"evidence_ids\": [\"E003\"],\n      \"human_corrected\": false,\n      \"removed\": false\n    },\n    {\n      \"fact_id\": \"F009\",\n      \"text\": \"Laptop purchased for personal use\",\n      \"confidence\": 0.95,\n      \"evidence_ids\": [],\n      \"human_corrected\": false,\n      \"removed\": false\n    },\n    {\n      \"fact_id\": \"F010\",\n      \"text\": \"Defect occurred within 4 days of delivery\",\n      \"confidence\": 0.9,\n      \"evidence_ids\": [\"E001\", \"E002\"],\n      \"human_corrected\": false,\n      \"removed\": false\n    }\n  ]\n}\n```",
+        "cleaned": "{\n  \"facts\": [\n    {\n      \"fact_id\": \"F001\",\n      \"text\": \"Gaming laptop purchased online for Rs. 78,999\",\n      \"confidence\": 0.95,\n      \"evidence_ids\": [\"E001\"],\n      \"human_corrected\": false,\n      \"removed\": false\n    },\n    {\n      \"fact_id\": \"F002\",\n      \"text\": \"Purchase date: 1 August 2026\",\n      \"confidence\": 0.95,\n      \"evidence_ids\": [\"E001\"],\n      \"human_corrected\": false,\n      \"removed\": false\n    },\n    {\n      \"fact_id\": \"F003\",\n      \"text\": \"Delivery date: 3 August 2026\",\n      \"confidence\": 0.95,\n      \"evidence_ids\": [\"E001\"],\n      \"human_corrected\": false,\n      \"removed\": false\n    },\n    {\n      \"fact_id\": \"F004\",\n      \"text\": \"Laptop began shutting down repeatedly starting 7 August 2026\",\n      \"confidence\": 0.9,\n      \"evidence_ids\": [\"E002\"],\n      \"human_corrected\": false,\n      \"removed\": false\n    },\n    {\n      \"fact_id\": \"F005\",\n      \"text\": \"Authorized service centre diagnosed motherboard fault\",\n      \"confidence\": 0.95,\n      \"evidence_ids\": [\"E002\"],\n      \"human_corrected\": false,\n      \"removed\": false\n    },\n    {\n      \"fact_id\": \"F006\",\n      \"text\": \"Service job sheet dated 7 August 2026\",\n      \"confidence\": 0.95,\n      \"evidence_ids\": [\"E002\"],\n      \"human_corrected\": false,\n      \"removed\": false\n    },\n    {\n      \"fact_id\": \"F007\",\n      \"text\": \"Consumer requested full replacement from seller citing return policy for manufacturing defects\",\n      \"confidence\": 0.9,\n      \"evidence_ids\": [\"E003\"],\n      \"human_corrected\": false,\n      \"removed\": false\n    },\n    {\n      \"fact_id\": \"F008\",\n      \"text\": \"Seller refused replacement and offered only repair\",\n      \"confidence\": 0.95,\n      \"evidence_ids\": [\"E003\"],\n      \"human_corrected\": false,\n      \"removed\": false\n    },\n    {\n      \"fact_id\": \"F009\",\n      \"text\": \"Laptop purchased for personal use\",\n      \"confidence\": 0.95,\n      \"evidence_ids\": [],\n      \"human_corrected\": false,\n      \"removed\": false\n    },\n    {\n      \"fact_id\": \"F010\",\n      \"text\": \"Defect occurred within 4 days of delivery\",\n      \"confidence\": 0.9,\n      \"evidence_ids\": [\"E001\", \"E002\"],\n      \"human_corrected\": false,\n      \"removed\": false\n    }\n  ]\n}",
+        "parsed": {
+          "facts": [
+            {
+              "fact_id": "F001",
+              "text": "Gaming laptop purchased online for Rs. 78,999",
+              "confidence": 0.95,
+              "evidence_ids": [
+                "E001"
+              ],
+              "human_corrected": false,
+              "removed": false
+            },
+            {
+              "fact_id": "F002",
+              "text": "Purchase date: 1 August 2026",
+              "confidence": 0.95,
+              "evidence_ids": [
+                "E001"
+              ],
+              "human_corrected": false,
+              "removed": false
+            },
+            {
+              "fact_id": "F003",
+              "text": "Delivery date: 3 August 2026",
+              "confidence": 0.95,
+              "evidence_ids": [
+                "E001"
+              ],
+              "human_corrected": false,
+              "removed": false
+            },
+            {
+              "fact_id": "F004",
+              "text": "Laptop began shutting down repeatedly starting 7 August 2026",
+              "confidence": 0.9,
+              "evidence_ids": [
+                "E002"
+              ],
+              "human_corrected": false,
+              "removed": false
+            },
+            {
+              "fact_id": "F005",
+              "text": "Authorized service centre diagnosed motherboard fault",
+              "confidence": 0.95,
+              "evidence_ids": [
+                "E002"
+              ],
+              "human_corrected": false,
+              "removed": false
+            },
+            {
+              "fact_id": "F006",
+              "text": "Service job sheet dated 7 August 2026",
+              "confidence": 0.95,
+              "evidence_ids": [
+                "E002"
+              ],
+              "human_corrected": false,
+              "removed": false
+            },
+            {
+              "fact_id": "F007",
+              "text": "Consumer requested full replacement from seller citing return policy for manufacturing defects",
+              "confidence": 0.9,
+              "evidence_ids": [
+                "E003"
+              ],
+              "human_corrected": false,
+              "removed": false
+            },
+            {
+              "fact_id": "F008",
+              "text": "Seller refused replacement and offered only repair",
+              "confidence": 0.95,
+              "evidence_ids": [
+                "E003"
+              ],
+              "human_corrected": false,
+              "removed": false
+            },
+            {
+              "fact_id": "F009",
+              "text": "Laptop purchased for personal use",
+              "confidence": 0.95,
+              "evidence_ids": [],
+              "human_corrected": false,
+              "removed": false
+            },
+            {
+              "fact_id": "F010",
+              "text": "Defect occurred within 4 days of delivery",
+              "confidence": 0.9,
+              "evidence_ids": [
+                "E001",
+                "E002"
+              ],
+              "human_corrected": false,
+              "removed": false
+            }
+          ]
+        },
+        "error": null,
+        "input_tokens": 313,
+        "output_tokens": 735
+      },
+      "attempt_2": null,
+      "final_status": "PASSED_FIRST_TIME"
+    },
+    {
+      "stage": "timeline_construction",
+      "prompt_sent": "Construct a chronological timeline of key events based on the client story, facts, and evidence.\n\nCLIENT STORY:\nI purchased a gaming laptop online for Rs. 78,999 on 1 August 2026 for personal use. The laptop was delivered on 3 August 2026. However, starting 7 August 2026, it began shutting down repeatedly. I brought it to an authorized service centre, and the job sheet states a motherboard fault. I contacted the seller requesting a full replacement as per the return policy for manufacturing defects, but the seller refused replacement and offered only repair.\n\nEXTRACTED FACTS:\n- [F001] Gaming laptop purchased online for Rs. 78,999 (Evidence: E001)\n- [F002] Purchase date: 1 August 2026 (Evidence: E001)\n- [F003] Delivery date: 3 August 2026 (Evidence: E001)\n- [F004] Laptop began shutting down repeatedly starting 7 August 2026 (Evidence: E002)\n- [F005] Authorized service centre diagnosed motherboard fault (Evidence: E002)\n- [F006] Service job sheet dated 7 August 2026 (Evidence: E002)\n- [F007] Consumer requested full replacement from seller citing return policy for manufacturing defects (Evidence: E003)\n- [F008] Seller refused replacement and offered only repair (Evidence: E003)\n- [F009] Laptop purchased for personal use (Evidence: )\n- [F010] Defect occurred within 4 days of delivery (Evidence: E001, E002)\n\nUPLOADED EVIDENCE:\n- [E001] purchase_invoice.pdf: Purchase invoice for gaming laptop Rs. 78,999 delivered 3 Aug 2026\n- [E002] service_jobsheet.pdf: Authorized service centre job sheet showing motherboard fault dated 7 Aug 2026\n- [E003] seller_refusal_email.pdf: Email correspondence where seller refused replacement and offered only repair\n\nSchema and format instructions:\nReturn only JSON matching this exact schema, with no prose and no markdown fences:\n{\"timeline\":[{\"event_id\":\"T001\",\"date\":\"string\",\"date_uncertain\":false,\"description\":\"string\",\"fact_ids\":[\"F001\"],\"evidence_ids\":[\"E001\"],\"human_corrected\":false}]}\nUse a date marker when the date is uncertain and preserve chronological order.",
+      "expected_schema": {
+        "$defs": {
+          "TimelineEvent": {
+            "properties": {
+              "event_id": {
+                "title": "Event Id",
+                "type": "string"
+              },
+              "date": {
+                "title": "Date",
+                "type": "string"
+              },
+              "date_uncertain": {
+                "default": false,
+                "title": "Date Uncertain",
+                "type": "boolean"
+              },
+              "description": {
+                "title": "Description",
+                "type": "string"
+              },
+              "fact_ids": {
+                "default": [],
+                "items": {
+                  "type": "string"
+                },
+                "title": "Fact Ids",
+                "type": "array"
+              },
+              "evidence_ids": {
+                "default": [],
+                "items": {
+                  "type": "string"
+                },
+                "title": "Evidence Ids",
+                "type": "array"
+              },
+              "human_corrected": {
+                "default": false,
+                "title": "Human Corrected",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "event_id",
+              "date",
+              "description"
+            ],
+            "title": "TimelineEvent",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "timeline": {
+            "items": {
+              "$ref": "#/$defs/TimelineEvent"
+            },
+            "title": "Timeline",
+            "type": "array"
+          }
+        },
+        "required": [
+          "timeline"
+        ],
+        "title": "TimelineOutput",
+        "type": "object"
+      },
+      "attempt_1": {
+        "raw": "```json\n{\n  \"timeline\": [\n    {\n      \"event_id\": \"T001\",\n      \"date\": \"2026-08-01\",\n      \"date_uncertain\": false,\n      \"description\": \"Gaming laptop purchased online for Rs. 78,999 for personal use\",\n      \"fact_ids\": [\"F001\", \"F002\", \"F009\"],\n      \"evidence_ids\": [\"E001\"],\n      \"human_corrected\": false\n    },\n    {\n      \"event_id\": \"T002\",\n      \"date\": \"2026-08-03\",\n      \"date_uncertain\": false,\n      \"description\": \"Gaming laptop delivered to consumer\",\n      \"fact_ids\": [\"F003\"],\n      \"evidence_ids\": [\"E001\"],\n      \"human_corrected\": false\n    },\n    {\n      \"event_id\": \"T003\",\n      \"date\": \"2026-08-07\",\n      \"date_uncertain\": false,\n      \"description\": \"Laptop began shutting down repeatedly; consumer brought it to authorized service centre which diagnosed motherboard fault\",\n      \"fact_ids\": [\"F004\", \"F005\", \"F006\", \"F010\"],\n      \"evidence_ids\": [\"E002\"],\n      \"human_corrected\": false\n    },\n    {\n      \"event_id\": \"T004\",\n      \"date\": \"2026-08-07\",\n      \"date_uncertain\": true,\n      \"description\": \"Consumer contacted seller requesting full replacement citing return policy for manufacturing defects; seller refused replacement and offered only repair\",\n      \"fact_ids\": [\"F007\", \"F008\"],\n      \"evidence_ids\": [\"E003\"],\n      \"human_corrected\": false\n    }\n  ]\n}\n```",
+        "cleaned": "{\n  \"timeline\": [\n    {\n      \"event_id\": \"T001\",\n      \"date\": \"2026-08-01\",\n      \"date_uncertain\": false,\n      \"description\": \"Gaming laptop purchased online for Rs. 78,999 for personal use\",\n      \"fact_ids\": [\"F001\", \"F002\", \"F009\"],\n      \"evidence_ids\": [\"E001\"],\n      \"human_corrected\": false\n    },\n    {\n      \"event_id\": \"T002\",\n      \"date\": \"2026-08-03\",\n      \"date_uncertain\": false,\n      \"description\": \"Gaming laptop delivered to consumer\",\n      \"fact_ids\": [\"F003\"],\n      \"evidence_ids\": [\"E001\"],\n      \"human_corrected\": false\n    },\n    {\n      \"event_id\": \"T003\",\n      \"date\": \"2026-08-07\",\n      \"date_uncertain\": false,\n      \"description\": \"Laptop began shutting down repeatedly; consumer brought it to authorized service centre which diagnosed motherboard fault\",\n      \"fact_ids\": [\"F004\", \"F005\", \"F006\", \"F010\"],\n      \"evidence_ids\": [\"E002\"],\n      \"human_corrected\": false\n    },\n    {\n      \"event_id\": \"T004\",\n      \"date\": \"2026-08-07\",\n      \"date_uncertain\": true,\n      \"description\": \"Consumer contacted seller requesting full replacement citing return policy for manufacturing defects; seller refused replacement and offered only repair\",\n      \"fact_ids\": [\"F007\", \"F008\"],\n      \"evidence_ids\": [\"E003\"],\n      \"human_corrected\": false\n    }\n  ]\n}",
+        "parsed": {
+          "timeline": [
+            {
+              "event_id": "T001",
+              "date": "2026-08-01",
+              "date_uncertain": false,
+              "description": "Gaming laptop purchased online for Rs. 78,999 for personal use",
+              "fact_ids": [
+                "F001",
+                "F002",
+                "F009"
+              ],
+              "evidence_ids": [
+                "E001"
+              ],
+              "human_corrected": false
+            },
+            {
+              "event_id": "T002",
+              "date": "2026-08-03",
+              "date_uncertain": false,
+              "description": "Gaming laptop delivered to consumer",
+              "fact_ids": [
+                "F003"
+              ],
+              "evidence_ids": [
+                "E001"
+              ],
+              "human_corrected": false
+            },
+            {
+              "event_id": "T003",
+              "date": "2026-08-07",
+              "date_uncertain": false,
+              "description": "Laptop began shutting down repeatedly; consumer brought it to authorized service centre which diagnosed motherboard fault",
+              "fact_ids": [
+                "F004",
+                "F005",
+                "F006",
+                "F010"
+              ],
+              "evidence_ids": [
+                "E002"
+              ],
+              "human_corrected": false
+            },
+            {
+              "event_id": "T004",
+              "date": "2026-08-07",
+              "date_uncertain": true,
+              "description": "Consumer contacted seller requesting full replacement citing return policy for manufacturing defects; seller refused replacement and offered only repair",
+              "fact_ids": [
+                "F007",
+                "F008"
+              ],
+              "evidence_ids": [
+                "E003"
+              ],
+              "human_corrected": false
+            }
+          ]
+        },
+        "error": null,
+        "input_tokens": 561,
+        "output_tokens": 413
+      },
+      "attempt_2": null,
+      "final_status": "PASSED_FIRST_TIME"
+    },
+    {
+      "stage": "party_identification",
+      "prompt_sent": "Identify the parties involved, their legal roles, and their relationship.\n\nCLIENT STORY:\nI purchased a gaming laptop online for Rs. 78,999 on 1 August 2026 for personal use. The laptop was delivered on 3 August 2026. However, starting 7 August 2026, it began shutting down repeatedly. I brought it to an authorized service centre, and the job sheet states a motherboard fault. I contacted the seller requesting a full replacement as per the return policy for manufacturing defects, but the seller refused replacement and offered only repair.\n\nEXTRACTED FACTS:\n- [F001] Gaming laptop purchased online for Rs. 78,999 (Evidence: E001)\n- [F002] Purchase date: 1 August 2026 (Evidence: E001)\n- [F003] Delivery date: 3 August 2026 (Evidence: E001)\n- [F004] Laptop began shutting down repeatedly starting 7 August 2026 (Evidence: E002)\n- [F005] Authorized service centre diagnosed motherboard fault (Evidence: E002)\n- [F006] Service job sheet dated 7 August 2026 (Evidence: E002)\n- [F007] Consumer requested full replacement from seller citing return policy for manufacturing defects (Evidence: E003)\n- [F008] Seller refused replacement and offered only repair (Evidence: E003)\n- [F009] Laptop purchased for personal use (Evidence: )\n- [F010] Defect occurred within 4 days of delivery (Evidence: E001, E002)\n\nSchema and format instructions:\nReturn only JSON matching this exact schema, with no prose and no markdown fences:\n{\"parties\":{\"client_role\":\"string\",\"opposite_party\":\"string\",\"relationship\":\"string\",\"human_corrected\":false}}",
+      "expected_schema": {
+        "$defs": {
+          "Parties": {
+            "properties": {
+              "client_role": {
+                "title": "Client Role",
+                "type": "string"
+              },
+              "opposite_party": {
+                "title": "Opposite Party",
+                "type": "string"
+              },
+              "relationship": {
+                "title": "Relationship",
+                "type": "string"
+              },
+              "human_corrected": {
+                "default": false,
+                "title": "Human Corrected",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "client_role",
+              "opposite_party",
+              "relationship"
+            ],
+            "title": "Parties",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "parties": {
+            "$ref": "#/$defs/Parties"
+          }
+        },
+        "required": [
+          "parties"
+        ],
+        "title": "PartyOutput",
+        "type": "object"
+      },
+      "attempt_1": {
+        "raw": "```json\n{\n  \"parties\": {\n    \"client_role\": \"Consumer/Buyer\",\n    \"opposite_party\": \"Seller (Online Retailer)\",\n    \"relationship\": \"Buyer-Seller relationship in a consumer transaction for purchase of a gaming laptop; the seller is also bound by the return/replacement policy for manufacturing defects\",\n    \"human_corrected\": false\n  }\n}\n```",
+        "cleaned": "{\n  \"parties\": {\n    \"client_role\": \"Consumer/Buyer\",\n    \"opposite_party\": \"Seller (Online Retailer)\",\n    \"relationship\": \"Buyer-Seller relationship in a consumer transaction for purchase of a gaming laptop; the seller is also bound by the return/replacement policy for manufacturing defects\",\n    \"human_corrected\": false\n  }\n}",
+        "parsed": {
+          "parties": {
+            "client_role": "Consumer/Buyer",
+            "opposite_party": "Seller (Online Retailer)",
+            "relationship": "Buyer-Seller relationship in a consumer transaction for purchase of a gaming laptop; the seller is also bound by the return/replacement policy for manufacturing defects",
+            "human_corrected": false
+          }
+        },
+        "error": null,
+        "input_tokens": 420,
+        "output_tokens": 97
+      },
+      "attempt_2": null,
+      "final_status": "PASSED_FIRST_TIME"
+    },
+    {
+      "stage": "domain_router",
+      "prompt_sent": "Classify the legal domain of this Indian legal dispute.\n\nCLIENT STORY:\nI purchased a gaming laptop online for Rs. 78,999 on 1 August 2026 for personal use. The laptop was delivered on 3 August 2026. However, starting 7 August 2026, it began shutting down repeatedly. I brought it to an authorized service centre, and the job sheet states a motherboard fault. I contacted the seller requesting a full replacement as per the return policy for manufacturing defects, but the seller refused replacement and offered only repair.\n\nEXTRACTED FACTS:\n- [F001] Gaming laptop purchased online for Rs. 78,999\n- [F002] Purchase date: 1 August 2026\n- [F003] Delivery date: 3 August 2026\n- [F004] Laptop began shutting down repeatedly starting 7 August 2026\n- [F005] Authorized service centre diagnosed motherboard fault\n- [F006] Service job sheet dated 7 August 2026\n- [F007] Consumer requested full replacement from seller citing return policy for manufacturing defects\n- [F008] Seller refused replacement and offered only repair\n- [F009] Laptop purchased for personal use\n- [F010] Defect occurred within 4 days of delivery\n\nSchema and format instructions:\nClassify the legal domain of the following Indian legal dispute (e.g., \"Consumer\", \"Civil\", \"Criminal\", \"Labor\", \"Commercial\", etc.).\n\nReturn only JSON with no prose or markdown fences:\n{\"domain\":\"string\",\"sub_domain\":\"string\",\"confidence\":0.0,\"reasoning\":\"string\"}",
+      "expected_schema": {
+        "properties": {
+          "domain": {
+            "title": "Domain",
+            "type": "string"
+          },
+          "sub_domain": {
+            "title": "Sub Domain",
+            "type": "string"
+          },
+          "confidence": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "reasoning": {
+            "title": "Reasoning",
+            "type": "string"
+          }
+        },
+        "required": [
+          "domain",
+          "sub_domain",
+          "confidence",
+          "reasoning"
+        ],
+        "title": "DomainOutput",
+        "type": "object"
+      },
+      "attempt_1": {
+        "raw": "```json\n{\"domain\":\"Consumer\",\"sub_domain\":\"Product Defect and Warranty Claims\",\"confidence\":0.95,\"reasoning\":\"This dispute involves a defective product (gaming laptop) purchased by a consumer for personal use, with a manufacturing defect (motherboard fault) discovered within days of delivery. The core issue is the seller's refusal to provide replacement under the return/warranty policy for manufacturing defects, instead offering only repair. This falls squarely under consumer protection law, specifically the Consumer Protection Act, 2019, which governs product quality, warranty obligations, and consumer remedies for defective goods. The dispute involves claims of breach of warranty and unfair trade practice by the seller.\"}\n```",
+        "cleaned": "{\"domain\":\"Consumer\",\"sub_domain\":\"Product Defect and Warranty Claims\",\"confidence\":0.95,\"reasoning\":\"This dispute involves a defective product (gaming laptop) purchased by a consumer for personal use, with a manufacturing defect (motherboard fault) discovered within days of delivery. The core issue is the seller's refusal to provide replacement under the return/warranty policy for manufacturing defects, instead offering only repair. This falls squarely under consumer protection law, specifically the Consumer Protection Act, 2019, which governs product quality, warranty obligations, and consumer remedies for defective goods. The dispute involves claims of breach of warranty and unfair trade practice by the seller.\"}",
+        "parsed": {
+          "domain": "Consumer",
+          "sub_domain": "Product Defect and Warranty Claims",
+          "confidence": 0.95,
+          "reasoning": "This dispute involves a defective product (gaming laptop) purchased by a consumer for personal use, with a manufacturing defect (motherboard fault) discovered within days of delivery. The core issue is the seller's refusal to provide replacement under the return/warranty policy for manufacturing defects, instead offering only repair. This falls squarely under consumer protection law, specifically the Consumer Protection Act, 2019, which governs product quality, warranty obligations, and consumer remedies for defective goods. The dispute involves claims of breach of warranty and unfair trade practice by the seller."
+        },
+        "error": null,
+        "input_tokens": 373,
+        "output_tokens": 153
+      },
+      "attempt_2": null,
+      "final_status": "PASSED_FIRST_TIME"
+    },
+    {
+      "stage": "legal_issue_identification",
+      "prompt_sent": "Identify all legal issues raised by the facts and evidence in this dispute.\n\nCLIENT STORY:\nI purchased a gaming laptop online for Rs. 78,999 on 1 August 2026 for personal use. The laptop was delivered on 3 August 2026. However, starting 7 August 2026, it began shutting down repeatedly. I brought it to an authorized service centre, and the job sheet states a motherboard fault. I contacted the seller requesting a full replacement as per the return policy for manufacturing defects, but the seller refused replacement and offered only repair.\n\nEXTRACTED FACTS:\n- [F001] Gaming laptop purchased online for Rs. 78,999\n- [F002] Purchase date: 1 August 2026\n- [F003] Delivery date: 3 August 2026\n- [F004] Laptop began shutting down repeatedly starting 7 August 2026\n- [F005] Authorized service centre diagnosed motherboard fault\n- [F006] Service job sheet dated 7 August 2026\n- [F007] Consumer requested full replacement from seller citing return policy for manufacturing defects\n- [F008] Seller refused replacement and offered only repair\n- [F009] Laptop purchased for personal use\n- [F010] Defect occurred within 4 days of delivery\n\nUPLOADED EVIDENCE:\n- [E001] purchase_invoice.pdf: Purchase invoice for gaming laptop Rs. 78,999 delivered 3 Aug 2026\n- [E002] service_jobsheet.pdf: Authorized service centre job sheet showing motherboard fault dated 7 Aug 2026\n- [E003] seller_refusal_email.pdf: Email correspondence where seller refused replacement and offered only repair\n\nSchema and format instructions:\nReturn only JSON with no prose or markdown fences: {\"issues\":[{\"issue_id\":\"I001\",\"question\":\"string\",\"fact_ids\":[\"F001\"],\"evidence_ids\":[\"E001\"],\"status\":\"OPEN\"}]}.",
+      "expected_schema": {
+        "$defs": {
+          "LegalIssue": {
+            "properties": {
+              "issue_id": {
+                "title": "Issue Id",
+                "type": "string"
+              },
+              "question": {
+                "title": "Question",
+                "type": "string"
+              },
+              "fact_ids": {
+                "default": [],
+                "items": {
+                  "type": "string"
+                },
+                "title": "Fact Ids",
+                "type": "array"
+              },
+              "evidence_ids": {
+                "default": [],
+                "items": {
+                  "type": "string"
+                },
+                "title": "Evidence Ids",
+                "type": "array"
+              },
+              "status": {
+                "default": "OPEN",
+                "title": "Status",
+                "type": "string"
+              }
+            },
+            "required": [
+              "issue_id",
+              "question"
+            ],
+            "title": "LegalIssue",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "issues": {
+            "items": {
+              "$ref": "#/$defs/LegalIssue"
+            },
+            "title": "Issues",
+            "type": "array"
+          }
+        },
+        "required": [
+          "issues"
+        ],
+        "title": "IssuesOutput",
+        "type": "object"
+      },
+      "attempt_1": {
+        "raw": "```json\n{\n  \"issues\": [\n    {\n      \"issue_id\": \"I001\",\n      \"question\": \"Whether the laptop contains a manufacturing defect covered under the Consumer Protection Act, 2019 and Indian Sale of Goods Act, 1930?\",\n      \"fact_ids\": [\"F004\", \"F005\", \"F010\"],\n      \"evidence_ids\": [\"E002\"],\n      \"status\": \"OPEN\"\n    },\n    {\n      \"issue_id\": \"I002\",\n      \"question\": \"Whether the consumer is entitled to replacement rather than repair under the return/replacement policy for manufacturing defects?\",\n      \"fact_ids\": [\"F007\", \"F008\"],\n      \"evidence_ids\": [\"E003\"],\n      \"status\": \"OPEN\"\n    },\n    {\n      \"issue_id\": \"I003\",\n      \"question\": \"Whether the seller's refusal to replace and insistence on repair violates consumer rights under the Consumer Protection Act, 2019?\",\n      \"fact_ids\": [\"F008\"],\n      \"evidence_ids\": [\"E003\"],\n      \"status\": \"OPEN\"\n    },\n    {\n      \"issue_id\": \"I004\",\n      \"question\": \"Whether the defect manifesting within 4 days of delivery creates a presumption of manufacturing defect or breach of warranty of merchantability?\",\n      \"fact_ids\": [\"F003\", \"F004\", \"F010\"],\n      \"evidence_ids\": [\"E001\", \"E002\"],\n      \"status\": \"OPEN\"\n    },\n    {\n      \"issue_id\": \"I005\",\n      \"question\": \"Whether the consumer is entitled to compensation for loss of use, inconvenience, and mental harassment due to the seller's refusal to replace the defective product?\",\n      \"fact_ids\": [\"F007\", \"F008\"],\n      \"evidence_ids\": [\"E003\"],\n      \"status\": \"OPEN\"\n    },\n    {\n      \"issue_id\": \"I006\",\n      \"question\": \"What are the applicable terms of the seller's return policy for manufacturing defects, and does it mandate replacement or permit repair as an alternative?\",\n      \"fact_ids\": [\"F007\"],\n      \"evidence_ids\": [\"E003\"],\n      \"status\": \"OPEN\"\n    }\n  ]\n}\n```",
+        "cleaned": "{\n  \"issues\": [\n    {\n      \"issue_id\": \"I001\",\n      \"question\": \"Whether the laptop contains a manufacturing defect covered under the Consumer Protection Act, 2019 and Indian Sale of Goods Act, 1930?\",\n      \"fact_ids\": [\"F004\", \"F005\", \"F010\"],\n      \"evidence_ids\": [\"E002\"],\n      \"status\": \"OPEN\"\n    },\n    {\n      \"issue_id\": \"I002\",\n      \"question\": \"Whether the consumer is entitled to replacement rather than repair under the return/replacement policy for manufacturing defects?\",\n      \"fact_ids\": [\"F007\", \"F008\"],\n      \"evidence_ids\": [\"E003\"],\n      \"status\": \"OPEN\"\n    },\n    {\n      \"issue_id\": \"I003\",\n      \"question\": \"Whether the seller's refusal to replace and insistence on repair violates consumer rights under the Consumer Protection Act, 2019?\",\n      \"fact_ids\": [\"F008\"],\n      \"evidence_ids\": [\"E003\"],\n      \"status\": \"OPEN\"\n    },\n    {\n      \"issue_id\": \"I004\",\n      \"question\": \"Whether the defect manifesting within 4 days of delivery creates a presumption of manufacturing defect or breach of warranty of merchantability?\",\n      \"fact_ids\": [\"F003\", \"F004\", \"F010\"],\n      \"evidence_ids\": [\"E001\", \"E002\"],\n      \"status\": \"OPEN\"\n    },\n    {\n      \"issue_id\": \"I005\",\n      \"question\": \"Whether the consumer is entitled to compensation for loss of use, inconvenience, and mental harassment due to the seller's refusal to replace the defective product?\",\n      \"fact_ids\": [\"F007\", \"F008\"],\n      \"evidence_ids\": [\"E003\"],\n      \"status\": \"OPEN\"\n    },\n    {\n      \"issue_id\": \"I006\",\n      \"question\": \"What are the applicable terms of the seller's return policy for manufacturing defects, and does it mandate replacement or permit repair as an alternative?\",\n      \"fact_ids\": [\"F007\"],\n      \"evidence_ids\": [\"E003\"],\n      \"status\": \"OPEN\"\n    }\n  ]\n}",
+        "parsed": {
+          "issues": [
+            {
+              "issue_id": "I001",
+              "question": "Whether the laptop contains a manufacturing defect covered under the Consumer Protection Act, 2019 and Indian Sale of Goods Act, 1930?",
+              "fact_ids": [
+                "F004",
+                "F005",
+                "F010"
+              ],
+              "evidence_ids": [
+                "E002"
+              ],
+              "status": "OPEN"
+            },
+            {
+              "issue_id": "I002",
+              "question": "Whether the consumer is entitled to replacement rather than repair under the return/replacement policy for manufacturing defects?",
+              "fact_ids": [
+                "F007",
+                "F008"
+              ],
+              "evidence_ids": [
+                "E003"
+              ],
+              "status": "OPEN"
+            },
+            {
+              "issue_id": "I003",
+              "question": "Whether the seller's refusal to replace and insistence on repair violates consumer rights under the Consumer Protection Act, 2019?",
+              "fact_ids": [
+                "F008"
+              ],
+              "evidence_ids": [
+                "E003"
+              ],
+              "status": "OPEN"
+            },
+            {
+              "issue_id": "I004",
+              "question": "Whether the defect manifesting within 4 days of delivery creates a presumption of manufacturing defect or breach of warranty of merchantability?",
+              "fact_ids": [
+                "F003",
+                "F004",
+                "F010"
+              ],
+              "evidence_ids": [
+                "E001",
+                "E002"
+              ],
+              "status": "OPEN"
+            },
+            {
+              "issue_id": "I005",
+              "question": "Whether the consumer is entitled to compensation for loss of use, inconvenience, and mental harassment due to the seller's refusal to replace the defective product?",
+              "fact_ids": [
+                "F007",
+                "F008"
+              ],
+              "evidence_ids": [
+                "E003"
+              ],
+              "status": "OPEN"
+            },
+            {
+              "issue_id": "I006",
+              "question": "What are the applicable terms of the seller's return policy for manufacturing defects, and does it mandate replacement or permit repair as an alternative?",
+              "fact_ids": [
+                "F007"
+              ],
+              "evidence_ids": [
+                "E003"
+              ],
+              "status": "OPEN"
+            }
+          ]
+        },
+        "error": null,
+        "input_tokens": 456,
+        "output_tokens": 547
+      },
+      "attempt_2": null,
+      "final_status": "PASSED_FIRST_TIME"
+    },
+    {
+      "stage": "statute_retrieval",
+      "prompt_sent": "Select the provisions below that are directly applicable to this dispute.\nCRITICAL REQUIREMENT: You MUST ONLY select provisions from the CANDIDATE PROVISIONS list provided below. Do NOT recall, invent, or output any statutory provision, section number, or legal rule from your internal memory.\n\nCLIENT STORY:\nI purchased a gaming laptop online for Rs. 78,999 on 1 August 2026 for personal use. The laptop was delivered on 3 August 2026. However, starting 7 August 2026, it began shutting down repeatedly. I brought it to an authorized service centre, and the job sheet states a motherboard fault. I contacted the seller requesting a full replacement as per the return policy for manufacturing defects, but the seller refused replacement and offered only repair.\n\nEXTRACTED FACTS:\n- [F001] Gaming laptop purchased online for Rs. 78,999\n- [F002] Purchase date: 1 August 2026\n- [F003] Delivery date: 3 August 2026\n- [F004] Laptop began shutting down repeatedly starting 7 August 2026\n- [F005] Authorized service centre diagnosed motherboard fault\n- [F006] Service job sheet dated 7 August 2026\n- [F007] Consumer requested full replacement from seller citing return policy for manufacturing defects\n- [F008] Seller refused replacement and offered only repair\n- [F009] Laptop purchased for personal use\n- [F010] Defect occurred within 4 days of delivery\n\nLEGAL ISSUES:\n- [I001] Whether the laptop contains a manufacturing defect covered under the Consumer Protection Act, 2019 and Indian Sale of Goods Act, 1930?\n- [I002] Whether the consumer is entitled to replacement rather than repair under the return/replacement policy for manufacturing defects?\n- [I003] Whether the seller's refusal to replace and insistence on repair violates consumer rights under the Consumer Protection Act, 2019?\n- [I004] Whether the defect manifesting within 4 days of delivery creates a presumption of manufacturing defect or breach of warranty of merchantability?\n- [I005] Whether the consumer is entitled to compensation for loss of use, inconvenience, and mental harassment due to the seller's refusal to replace the defective product?\n- [I006] What are the applicable terms of the seller's return policy for manufacturing defects, and does it mandate replacement or permit repair as an alternative?\n\nCANDIDATE PROVISIONS (these are the ONLY provisions you may select from):\n- [CPA-39] Section 39 - Reliefs: The District Commission may grant relief including repair, replacement, refund, compensation and discontinuance of an unfair practice where justified. (Source: https://www.indiacode.nic.in/handle/123456789/15256)\n- [CPA-2-7] Section 2(7) - Consumer: A consumer buys goods or hires services for consideration, generally for personal use and not for resale or commercial purpose. (Source: https://www.indiacode.nic.in/handle/123456789/15256)\n- [CPA-2-10] Section 2(10) - Defect: Defect means a fault, imperfection or shortcoming in the quality, quantity, purity or standard of goods required by law or contract. (Source: https://www.indiacode.nic.in/handle/123456789/15256)\n- [CPA-2-47] Section 2(47) - Unfair trade practice: Unfair trade practice includes specified deceptive or unfair methods used to promote the sale or supply of goods or services. (Source: https://www.indiacode.nic.in/handle/123456789/15256)\n- [CPA-34] Section 34 - Jurisdiction of District Commission: The District Commission has jurisdiction to entertain complaints within the pecuniary limits prescribed by the Act and rules. (Source: https://www.indiacode.nic.in/handle/123456789/15256)\n- [CPA-35] Section 35 - Manner of complaint: A complaint may be filed by a consumer in the manner prescribed before the appropriate Consumer Commission. (Source: https://www.indiacode.nic.in/handle/123456789/15256)\n- [CPA-69] Section 69 - Limitation period: A complaint should ordinarily be filed within two years from the date on which the cause of action arose, subject to condonation for sufficient cause. (Source: https://www.indiacode.nic.in/handle/123456789/15256)\n- [CPA-2-11] Section 2(11) - Deficiency: Deficiency means a fault, imperfection, shortcoming or inadequacy in the quality or manner of performance of a service required by law or contract. (Source: https://www.indiacode.nic.in/handle/123456789/15256)\n- [RULE-3-2021] 2021 Rules Rule 3 - Pecuniary jurisdiction: District Commission: consideration paid up to Rs. 50 lakh; State Commission: above Rs. 50 lakh up to Rs. 2 crore; National Commission: above Rs. 2 crore. (Source: https://egazette.nic.in/WriteReadData/2021/229042.pdf)\n\nSchema and format instructions:\nSelect only from the CANDIDATE PROVISIONS listed above. Do NOT recall, invent, or output any provisions from your internal memory.\nUse the exact provision_id, title, and source_url from the candidate list. Justify each selected provision against specific facts from the dispute. Leave \"rejected\" as an empty list.\n\nReturn only JSON with no prose or markdown fences:\n{\"selected\":[{\"provision_id\":\"string\",\"title\":\"string\",\"explanation\":\"string\",\"fact_ids\":[\"F001\"],\"source_url\":\"https://example\"}],\"rejected\":[]}",
+      "expected_schema": {
+        "$defs": {
+          "ProvisionProposal": {
+            "properties": {
+              "provision_id": {
+                "title": "Provision Id",
+                "type": "string"
+              },
+              "title": {
+                "title": "Title",
+                "type": "string"
+              },
+              "explanation": {
+                "title": "Explanation",
+                "type": "string"
+              },
+              "fact_ids": {
+                "default": [],
+                "items": {
+                  "type": "string"
+                },
+                "title": "Fact Ids",
+                "type": "array"
+              },
+              "source_url": {
+                "title": "Source Url",
+                "type": "string"
+              }
+            },
+            "required": [
+              "provision_id",
+              "title",
+              "explanation",
+              "source_url"
+            ],
+            "title": "ProvisionProposal",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "selected": {
+            "items": {
+              "$ref": "#/$defs/ProvisionProposal"
+            },
+            "title": "Selected",
+            "type": "array"
+          },
+          "rejected": {
+            "default": [],
+            "items": {
+              "$ref": "#/$defs/ProvisionProposal"
+            },
+            "title": "Rejected",
+            "type": "array"
+          }
+        },
+        "required": [
+          "selected"
+        ],
+        "title": "StatuteOutput",
+        "type": "object"
+      },
+      "attempt_1": {
+        "raw": "```json\n{\n  \"selected\": [\n    {\n      \"provision_id\": \"CPA-2-7\",\n      \"title\": \"Section 2(7) - Consumer\",\n      \"explanation\": \"The client qualifies as a consumer under this provision as they purchased the gaming laptop for personal use and not for resale or commercial purpose, establishing standing to file a consumer protection complaint.\",\n      \"fact_ids\": [\"F001\", \"F009\"],\n      \"source_url\": \"https://www.indiacode.nic.in/handle/123456789/15256\"\n    },\n    {\n      \"provision_id\": \"CPA-2-10\",\n      \"title\": \"Section 2(10) - Defect\",\n      \"explanation\": \"The motherboard fault diagnosed by the authorized service centre constitutes a defect as defined - a fault or imperfection in the quality of goods. This defect manifested within 4 days of delivery, establishing a manufacturing defect claim.\",\n      \"fact_ids\": [\"F004\", \"F005\", \"F006\", \"F010\"],\n      \"source_url\": \"https://www.indiacode.nic.in/handle/123456789/15256\"\n    },\n    {\n      \"provision_id\": \"CPA-2-47\",\n      \"title\": \"Section 2(47) - Unfair trade practice\",\n      \"explanation\": \"The seller's refusal to provide replacement as per the stated return policy for manufacturing defects while offering only repair may constitute an unfair or deceptive trade practice, as it potentially involves misrepresentation of the return policy terms to the consumer.\",\n      \"fact_ids\": [\"F007\", \"F008\"],\n      \"source_url\": \"https://www.indiacode.nic.in/handle/123456789/15256\"\n    },\n    {\n      \"provision_id\": \"CPA-39\",\n      \"title\": \"Section 39 - Reliefs\",\n      \"explanation\": \"This provision empowers the District Commission to grant relief including replacement, repair, refund, and compensation. It is directly applicable as the consumer is seeking replacement as a remedy for the manufacturing defect and the seller's refusal to comply with the return policy.\",\n      \"fact_ids\": [\"F007\", \"F008\"],\n      \"source_url\": \"https://www.indiacode.nic.in/handle/123456789/15256\"\n    },\n    {\n      \"provision_id\": \"CPA-34\",\n      \"title\": \"Section 34 - Jurisdiction of District Commission\",\n      \"explanation\": \"The District Commission has jurisdiction to entertain this complaint. With a purchase price of Rs. 78,999, the pecuniary value falls within the District Commission's jurisdiction limits (up to Rs. 50 lakh).\",\n      \"fact_ids\": [\"F001\"],\n      \"source_url\": \"https://www.indiacode.nic.in/handle/123456789/15256\"\n    },\n    {\n      \"provision_id\": \"CPA-35\",\n      \"title\": \"Section 35 - Manner of complaint\",\n      \"explanation\": \"This provision establishes the procedural requirement for filing a complaint before the appropriate Consumer Commission, which is applicable to the client's potential remedy.\",\n      \"fact_ids\": [\"F001\"],\n      \"source_url\": \"https://www.indiacode.nic.in/handle/123456789/15256\"\n    },\n    {\n      \"provision_id\": \"CPA-69\",\n      \"title\": \"Section 69 - Limitation period\",\n      \"explanation\": \"The consumer must file the complaint within two years from the date of the cause of action (7 August 2026, when the defect manifested). This provision establishes the temporal limit within which the dispute must be pursued.\",\n      \"fact_ids\": [\"F004\"],\n      \"source_url\": \"https://www.indiacode.nic.in/handle/123456789/15256\"\n    },\n    {\n      \"provision_id\": \"RULE-3-2021\",\n      \"title\": \"2021 Rules Rule 3 - Pecuniary jurisdiction\",\n      \"explanation\": \"With consideration paid of Rs. 78,999, the pecuniary jurisdiction lies with the District Commission (for amounts up to Rs. 50 lakh), confirming the appropriate forum for filing the consumer complaint.\",\n      \"fact_ids\": [\"F001\"],\n      \"source_url\": \"https://egazette.nic.in/WriteReadData/2021/229042.pdf\"\n    }\n  ],\n  \"rejected\": []\n}\n```",
+        "cleaned": "{\n  \"selected\": [\n    {\n      \"provision_id\": \"CPA-2-7\",\n      \"title\": \"Section 2(7) - Consumer\",\n      \"explanation\": \"The client qualifies as a consumer under this provision as they purchased the gaming laptop for personal use and not for resale or commercial purpose, establishing standing to file a consumer protection complaint.\",\n      \"fact_ids\": [\"F001\", \"F009\"],\n      \"source_url\": \"https://www.indiacode.nic.in/handle/123456789/15256\"\n    },\n    {\n      \"provision_id\": \"CPA-2-10\",\n      \"title\": \"Section 2(10) - Defect\",\n      \"explanation\": \"The motherboard fault diagnosed by the authorized service centre constitutes a defect as defined - a fault or imperfection in the quality of goods. This defect manifested within 4 days of delivery, establishing a manufacturing defect claim.\",\n      \"fact_ids\": [\"F004\", \"F005\", \"F006\", \"F010\"],\n      \"source_url\": \"https://www.indiacode.nic.in/handle/123456789/15256\"\n    },\n    {\n      \"provision_id\": \"CPA-2-47\",\n      \"title\": \"Section 2(47) - Unfair trade practice\",\n      \"explanation\": \"The seller's refusal to provide replacement as per the stated return policy for manufacturing defects while offering only repair may constitute an unfair or deceptive trade practice, as it potentially involves misrepresentation of the return policy terms to the consumer.\",\n      \"fact_ids\": [\"F007\", \"F008\"],\n      \"source_url\": \"https://www.indiacode.nic.in/handle/123456789/15256\"\n    },\n    {\n      \"provision_id\": \"CPA-39\",\n      \"title\": \"Section 39 - Reliefs\",\n      \"explanation\": \"This provision empowers the District Commission to grant relief including replacement, repair, refund, and compensation. It is directly applicable as the consumer is seeking replacement as a remedy for the manufacturing defect and the seller's refusal to comply with the return policy.\",\n      \"fact_ids\": [\"F007\", \"F008\"],\n      \"source_url\": \"https://www.indiacode.nic.in/handle/123456789/15256\"\n    },\n    {\n      \"provision_id\": \"CPA-34\",\n      \"title\": \"Section 34 - Jurisdiction of District Commission\",\n      \"explanation\": \"The District Commission has jurisdiction to entertain this complaint. With a purchase price of Rs. 78,999, the pecuniary value falls within the District Commission's jurisdiction limits (up to Rs. 50 lakh).\",\n      \"fact_ids\": [\"F001\"],\n      \"source_url\": \"https://www.indiacode.nic.in/handle/123456789/15256\"\n    },\n    {\n      \"provision_id\": \"CPA-35\",\n      \"title\": \"Section 35 - Manner of complaint\",\n      \"explanation\": \"This provision establishes the procedural requirement for filing a complaint before the appropriate Consumer Commission, which is applicable to the client's potential remedy.\",\n      \"fact_ids\": [\"F001\"],\n      \"source_url\": \"https://www.indiacode.nic.in/handle/123456789/15256\"\n    },\n    {\n      \"provision_id\": \"CPA-69\",\n      \"title\": \"Section 69 - Limitation period\",\n      \"explanation\": \"The consumer must file the complaint within two years from the date of the cause of action (7 August 2026, when the defect manifested). This provision establishes the temporal limit within which the dispute must be pursued.\",\n      \"fact_ids\": [\"F004\"],\n      \"source_url\": \"https://www.indiacode.nic.in/handle/123456789/15256\"\n    },\n    {\n      \"provision_id\": \"RULE-3-2021\",\n      \"title\": \"2021 Rules Rule 3 - Pecuniary jurisdiction\",\n      \"explanation\": \"With consideration paid of Rs. 78,999, the pecuniary jurisdiction lies with the District Commission (for amounts up to Rs. 50 lakh), confirming the appropriate forum for filing the consumer complaint.\",\n      \"fact_ids\": [\"F001\"],\n      \"source_url\": \"https://egazette.nic.in/WriteReadData/2021/229042.pdf\"\n    }\n  ],\n  \"rejected\": []\n}",
+        "parsed": {
+          "selected": [
+            {
+              "provision_id": "CPA-2-7",
+              "title": "Section 2(7) - Consumer",
+              "explanation": "The client qualifies as a consumer under this provision as they purchased the gaming laptop for personal use and not for resale or commercial purpose, establishing standing to file a consumer protection complaint.",
+              "fact_ids": [
+                "F001",
+                "F009"
+              ],
+              "source_url": "https://www.indiacode.nic.in/handle/123456789/15256"
+            },
+            {
+              "provision_id": "CPA-2-10",
+              "title": "Section 2(10) - Defect",
+              "explanation": "The motherboard fault diagnosed by the authorized service centre constitutes a defect as defined - a fault or imperfection in the quality of goods. This defect manifested within 4 days of delivery, establishing a manufacturing defect claim.",
+              "fact_ids": [
+                "F004",
+                "F005",
+                "F006",
+                "F010"
+              ],
+              "source_url": "https://www.indiacode.nic.in/handle/123456789/15256"
+            },
+            {
+              "provision_id": "CPA-2-47",
+              "title": "Section 2(47) - Unfair trade practice",
+              "explanation": "The seller's refusal to provide replacement as per the stated return policy for manufacturing defects while offering only repair may constitute an unfair or deceptive trade practice, as it potentially involves misrepresentation of the return policy terms to the consumer.",
+              "fact_ids": [
+                "F007",
+                "F008"
+              ],
+              "source_url": "https://www.indiacode.nic.in/handle/123456789/15256"
+            },
+            {
+              "provision_id": "CPA-39",
+              "title": "Section 39 - Reliefs",
+              "explanation": "This provision empowers the District Commission to grant relief including replacement, repair, refund, and compensation. It is directly applicable as the consumer is seeking replacement as a remedy for the manufacturing defect and the seller's refusal to comply with the return policy.",
+              "fact_ids": [
+                "F007",
+                "F008"
+              ],
+              "source_url": "https://www.indiacode.nic.in/handle/123456789/15256"
+            },
+            {
+              "provision_id": "CPA-34",
+              "title": "Section 34 - Jurisdiction of District Commission",
+              "explanation": "The District Commission has jurisdiction to entertain this complaint. With a purchase price of Rs. 78,999, the pecuniary value falls within the District Commission's jurisdiction limits (up to Rs. 50 lakh).",
+              "fact_ids": [
+                "F001"
+              ],
+              "source_url": "https://www.indiacode.nic.in/handle/123456789/15256"
+            },
+            {
+              "provision_id": "CPA-35",
+              "title": "Section 35 - Manner of complaint",
+              "explanation": "This provision establishes the procedural requirement for filing a complaint before the appropriate Consumer Commission, which is applicable to the client's potential remedy.",
+              "fact_ids": [
+                "F001"
+              ],
+              "source_url": "https://www.indiacode.nic.in/handle/123456789/15256"
+            },
+            {
+              "provision_id": "CPA-69",
+              "title": "Section 69 - Limitation period",
+              "explanation": "The consumer must file the complaint within two years from the date of the cause of action (7 August 2026, when the defect manifested). This provision establishes the temporal limit within which the dispute must be pursued.",
+              "fact_ids": [
+                "F004"
+              ],
+              "source_url": "https://www.indiacode.nic.in/handle/123456789/15256"
+            },
+            {
+              "provision_id": "RULE-3-2021",
+              "title": "2021 Rules Rule 3 - Pecuniary jurisdiction",
+              "explanation": "With consideration paid of Rs. 78,999, the pecuniary jurisdiction lies with the District Commission (for amounts up to Rs. 50 lakh), confirming the appropriate forum for filing the consumer complaint.",
+              "fact_ids": [
+                "F001"
+              ],
+              "source_url": "https://egazette.nic.in/WriteReadData/2021/229042.pdf"
+            }
+          ],
+          "rejected": []
+        },
+        "error": null,
+        "input_tokens": 1371,
+        "output_tokens": 1081
+      },
+      "attempt_2": null,
+      "final_status": "PASSED_FIRST_TIME"
+    },
+    {
+      "stage": "citation_verification",
+      "prompt_sent": "For each provision below, decide VERIFIED or REJECTED based solely on whether the facts support the provision's claim.\nYou MUST output a decision for every provision listed \u2014 no extras, no omissions.\n\nEXTRACTED FACTS:\n- [F001] Gaming laptop purchased online for Rs. 78,999\n- [F002] Purchase date: 1 August 2026\n- [F003] Delivery date: 3 August 2026\n- [F004] Laptop began shutting down repeatedly starting 7 August 2026\n- [F005] Authorized service centre diagnosed motherboard fault\n- [F006] Service job sheet dated 7 August 2026\n- [F007] Consumer requested full replacement from seller citing return policy for manufacturing defects\n- [F008] Seller refused replacement and offered only repair\n- [F009] Laptop purchased for personal use\n- [F010] Defect occurred within 4 days of delivery\n\nPROVISIONS TO VERIFY:\n- [CPA-2-7] Section 2(7) - Consumer: The client qualifies as a consumer under this provision as they purchased the gaming laptop for personal use and not for resale or commercial purpose, establishing standing to file a consumer protection complaint.\n- [CPA-2-10] Section 2(10) - Defect: The motherboard fault diagnosed by the authorized service centre constitutes a defect as defined - a fault or imperfection in the quality of goods. This defect manifested within 4 days of delivery, establishing a manufacturing defect claim.\n- [CPA-2-47] Section 2(47) - Unfair trade practice: The seller's refusal to provide replacement as per the stated return policy for manufacturing defects while offering only repair may constitute an unfair or deceptive trade practice, as it potentially involves misrepresentation of the return policy terms to the consumer.\n- [CPA-39] Section 39 - Reliefs: This provision empowers the District Commission to grant relief including replacement, repair, refund, and compensation. It is directly applicable as the consumer is seeking replacement as a remedy for the manufacturing defect and the seller's refusal to comply with the return policy.\n- [CPA-34] Section 34 - Jurisdiction of District Commission: The District Commission has jurisdiction to entertain this complaint. With a purchase price of Rs. 78,999, the pecuniary value falls within the District Commission's jurisdiction limits (up to Rs. 50 lakh).\n- [CPA-35] Section 35 - Manner of complaint: This provision establishes the procedural requirement for filing a complaint before the appropriate Consumer Commission, which is applicable to the client's potential remedy.\n- [CPA-69] Section 69 - Limitation period: The consumer must file the complaint within two years from the date of the cause of action (7 August 2026, when the defect manifested). This provision establishes the temporal limit within which the dispute must be pursued.\n- [RULE-3-2021] 2021 Rules Rule 3 - Pecuniary jurisdiction: With consideration paid of Rs. 78,999, the pecuniary jurisdiction lies with the District Commission (for amounts up to Rs. 50 lakh), confirming the appropriate forum for filing the consumer complaint.\n\nSchema and format instructions:\nFor each provision in PROVISIONS TO VERIFY, evaluate whether the case facts support it. Output VERIFIED if supported, or REJECTED otherwise.\nYou MUST output a decision for every provision listed. Do NOT add decisions for provisions not listed, and do NOT invent provision IDs.\n\nReturn only JSON with no prose or markdown fences:\n{\"decisions\":[{\"provision_id\":\"string\",\"decision\":\"VERIFIED\",\"reason\":\"string\"}]}",
+      "expected_schema": {
+        "$defs": {
+          "CitationDecision": {
+            "properties": {
+              "provision_id": {
+                "title": "Provision Id",
+                "type": "string"
+              },
+              "decision": {
+                "title": "Decision",
+                "type": "string"
+              },
+              "reason": {
+                "title": "Reason",
+                "type": "string"
+              }
+            },
+            "required": [
+              "provision_id",
+              "decision",
+              "reason"
+            ],
+            "title": "CitationDecision",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "decisions": {
+            "items": {
+              "$ref": "#/$defs/CitationDecision"
+            },
+            "title": "Decisions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "decisions"
+        ],
+        "title": "CitationOutput",
+        "type": "object"
+      },
+      "attempt_1": {
+        "raw": "```json\n{\n  \"decisions\": [\n    {\n      \"provision_id\": \"CPA-2-7\",\n      \"decision\": \"VERIFIED\",\n      \"reason\": \"Fact F009 confirms the laptop was purchased for personal use, not for resale or commercial purpose, establishing consumer status under this provision.\"\n    },\n    {\n      \"provision_id\": \"CPA-2-10\",\n      \"decision\": \"VERIFIED\",\n      \"reason\": \"Facts F005 and F010 establish that an authorized service centre diagnosed a motherboard fault (a defect in quality) that manifested within 4 days of delivery, meeting the definition of defect.\"\n    },\n    {\n      \"provision_id\": \"CPA-2-47\",\n      \"decision\": \"VERIFIED\",\n      \"reason\": \"Facts F007 and F008 show the seller refused replacement despite a stated return policy for manufacturing defects and offered only repair instead, which may constitute misrepresentation or deceptive trade practice regarding policy terms.\"\n    },\n    {\n      \"provision_id\": \"CPA-39\",\n      \"decision\": \"VERIFIED\",\n      \"reason\": \"The provision is applicable as the consumer is seeking replacement as a remedy for manufacturing defect, and Section 39 empowers the District Commission to grant such relief including replacement.\"\n    },\n    {\n      \"provision_id\": \"CPA-34\",\n      \"decision\": \"VERIFIED\",\n      \"reason\": \"Fact F001 shows purchase price of Rs. 78,999, which falls within the District Commission's jurisdiction limit of up to Rs. 50 lakh, establishing proper jurisdiction.\"\n    },\n    {\n      \"provision_id\": \"CPA-35\",\n      \"decision\": \"VERIFIED\",\n      \"reason\": \"The provision establishes procedural requirements for filing complaints before Consumer Commissions, which is applicable to this case and directly relevant to the consumer's remedy.\"\n    },\n    {\n      \"provision_id\": \"CPA-69\",\n      \"decision\": \"VERIFIED\",\n      \"reason\": \"Fact F004 establishes the cause of action date as 7 August 2026 when the defect manifested. This provision establishes a two-year limitation period from that date, which is applicable to determine the temporal window for filing.\"\n    },\n    {\n      \"provision_id\": \"RULE-3-2021\",\n      \"decision\": \"VERIFIED\",\n      \"reason\": \"Fact F001 shows consideration paid of Rs. 78,999, which falls within District Commission pecuniary jurisdiction (up to Rs. 50 lakh), confirming the appropriate forum for complaint under the 2021 Rules.\"\n    }\n  ]\n}\n```",
+        "cleaned": "{\n  \"decisions\": [\n    {\n      \"provision_id\": \"CPA-2-7\",\n      \"decision\": \"VERIFIED\",\n      \"reason\": \"Fact F009 confirms the laptop was purchased for personal use, not for resale or commercial purpose, establishing consumer status under this provision.\"\n    },\n    {\n      \"provision_id\": \"CPA-2-10\",\n      \"decision\": \"VERIFIED\",\n      \"reason\": \"Facts F005 and F010 establish that an authorized service centre diagnosed a motherboard fault (a defect in quality) that manifested within 4 days of delivery, meeting the definition of defect.\"\n    },\n    {\n      \"provision_id\": \"CPA-2-47\",\n      \"decision\": \"VERIFIED\",\n      \"reason\": \"Facts F007 and F008 show the seller refused replacement despite a stated return policy for manufacturing defects and offered only repair instead, which may constitute misrepresentation or deceptive trade practice regarding policy terms.\"\n    },\n    {\n      \"provision_id\": \"CPA-39\",\n      \"decision\": \"VERIFIED\",\n      \"reason\": \"The provision is applicable as the consumer is seeking replacement as a remedy for manufacturing defect, and Section 39 empowers the District Commission to grant such relief including replacement.\"\n    },\n    {\n      \"provision_id\": \"CPA-34\",\n      \"decision\": \"VERIFIED\",\n      \"reason\": \"Fact F001 shows purchase price of Rs. 78,999, which falls within the District Commission's jurisdiction limit of up to Rs. 50 lakh, establishing proper jurisdiction.\"\n    },\n    {\n      \"provision_id\": \"CPA-35\",\n      \"decision\": \"VERIFIED\",\n      \"reason\": \"The provision establishes procedural requirements for filing complaints before Consumer Commissions, which is applicable to this case and directly relevant to the consumer's remedy.\"\n    },\n    {\n      \"provision_id\": \"CPA-69\",\n      \"decision\": \"VERIFIED\",\n      \"reason\": \"Fact F004 establishes the cause of action date as 7 August 2026 when the defect manifested. This provision establishes a two-year limitation period from that date, which is applicable to determine the temporal window for filing.\"\n    },\n    {\n      \"provision_id\": \"RULE-3-2021\",\n      \"decision\": \"VERIFIED\",\n      \"reason\": \"Fact F001 shows consideration paid of Rs. 78,999, which falls within District Commission pecuniary jurisdiction (up to Rs. 50 lakh), confirming the appropriate forum for complaint under the 2021 Rules.\"\n    }\n  ]\n}",
+        "parsed": {
+          "decisions": [
+            {
+              "provision_id": "CPA-2-7",
+              "decision": "VERIFIED",
+              "reason": "Fact F009 confirms the laptop was purchased for personal use, not for resale or commercial purpose, establishing consumer status under this provision."
+            },
+            {
+              "provision_id": "CPA-2-10",
+              "decision": "VERIFIED",
+              "reason": "Facts F005 and F010 establish that an authorized service centre diagnosed a motherboard fault (a defect in quality) that manifested within 4 days of delivery, meeting the definition of defect."
+            },
+            {
+              "provision_id": "CPA-2-47",
+              "decision": "VERIFIED",
+              "reason": "Facts F007 and F008 show the seller refused replacement despite a stated return policy for manufacturing defects and offered only repair instead, which may constitute misrepresentation or deceptive trade practice regarding policy terms."
+            },
+            {
+              "provision_id": "CPA-39",
+              "decision": "VERIFIED",
+              "reason": "The provision is applicable as the consumer is seeking replacement as a remedy for manufacturing defect, and Section 39 empowers the District Commission to grant such relief including replacement."
+            },
+            {
+              "provision_id": "CPA-34",
+              "decision": "VERIFIED",
+              "reason": "Fact F001 shows purchase price of Rs. 78,999, which falls within the District Commission's jurisdiction limit of up to Rs. 50 lakh, establishing proper jurisdiction."
+            },
+            {
+              "provision_id": "CPA-35",
+              "decision": "VERIFIED",
+              "reason": "The provision establishes procedural requirements for filing complaints before Consumer Commissions, which is applicable to this case and directly relevant to the consumer's remedy."
+            },
+            {
+              "provision_id": "CPA-69",
+              "decision": "VERIFIED",
+              "reason": "Fact F004 establishes the cause of action date as 7 August 2026 when the defect manifested. This provision establishes a two-year limitation period from that date, which is applicable to determine the temporal window for filing."
+            },
+            {
+              "provision_id": "RULE-3-2021",
+              "decision": "VERIFIED",
+              "reason": "Fact F001 shows consideration paid of Rs. 78,999, which falls within District Commission pecuniary jurisdiction (up to Rs. 50 lakh), confirming the appropriate forum for complaint under the 2021 Rules."
+            }
+          ]
+        },
+        "error": null,
+        "input_tokens": 844,
+        "output_tokens": 629
+      },
+      "attempt_2": null,
+      "final_status": "PASSED_FIRST_TIME"
+    },
+    {
+      "stage": "jurisdiction_forum",
+      "prompt_sent": "Determine the appropriate legal forum, commission level, and territorial jurisdiction under Indian law.\n\nCLIENT STORY:\nI purchased a gaming laptop online for Rs. 78,999 on 1 August 2026 for personal use. The laptop was delivered on 3 August 2026. However, starting 7 August 2026, it began shutting down repeatedly. I brought it to an authorized service centre, and the job sheet states a motherboard fault. I contacted the seller requesting a full replacement as per the return policy for manufacturing defects, but the seller refused replacement and offered only repair.\n\nEXTRACTED FACTS:\n- [F001] Gaming laptop purchased online for Rs. 78,999\n- [F002] Purchase date: 1 August 2026\n- [F003] Delivery date: 3 August 2026\n- [F004] Laptop began shutting down repeatedly starting 7 August 2026\n- [F005] Authorized service centre diagnosed motherboard fault\n- [F006] Service job sheet dated 7 August 2026\n- [F007] Consumer requested full replacement from seller citing return policy for manufacturing defects\n- [F008] Seller refused replacement and offered only repair\n- [F009] Laptop purchased for personal use\n- [F010] Defect occurred within 4 days of delivery\n\nPARTIES:\nClient Role: Consumer/Buyer, Opposite Party: Seller (Online Retailer), Relationship: Buyer-Seller relationship in a consumer transaction for purchase of a gaming laptop; the seller is also bound by the return/replacement policy for manufacturing defects\n\nSchema and format instructions:\nReturn only JSON with no prose or markdown fences: {\"forum_family\":\"string\",\"commission_level\":\"string\",\"reasoning\":\"string\",\"territorial_basis\":\"string\",\"address_verification_required\":false}.",
+      "expected_schema": {
+        "properties": {
+          "forum_family": {
+            "title": "Forum Family",
+            "type": "string"
+          },
+          "commission_level": {
+            "title": "Commission Level",
+            "type": "string"
+          },
+          "reasoning": {
+            "title": "Reasoning",
+            "type": "string"
+          },
+          "territorial_basis": {
+            "title": "Territorial Basis",
+            "type": "string"
+          },
+          "address_verification_required": {
+            "default": false,
+            "title": "Address Verification Required",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "forum_family",
+          "commission_level",
+          "reasoning",
+          "territorial_basis"
+        ],
+        "title": "ForumOutput",
+        "type": "object"
+      },
+      "attempt_1": {
+        "raw": "```json\n{\n  \"forum_family\": \"Consumer Protection Authority\",\n  \"commission_level\": \"District Consumer Disputes Redressal Commission\",\n  \"reasoning\": \"The claim value is Rs. 78,999, which falls within the District Commission's jurisdiction (between Rs. 1,00,000 and above, but this case involves a straightforward defect complaint with claim value below Rs. 1 crore, making District Commission appropriate for initial filing). The case involves a clear consumer dispute under the Consumer Protection Act, 2019 regarding defective goods (gaming laptop with motherboard fault), defective service (seller's refusal of replacement despite manufacturing defect), and violation of return policy. The defect manifested within 4 days of delivery, establishing prima facie manufacturing defect. The seller's refusal of replacement despite authorized service centre diagnosis constitutes unfair trade practice and breach of warranty.\",\n  \"territorial_basis\": \"The territorial jurisdiction shall be determined by: (1) the place of delivery (3 August 2026); (2) the place where the consumer resides or works; or (3) the place where the cause of action arose (where the defect was discovered on 7 August 2026). The consumer should file in the District Consumer Disputes Redressal Commission having jurisdiction over the area where the laptop was delivered or where the consumer's residence/workplace is located. If the seller operates online, jurisdiction extends to the consumer's location as per e-commerce provisions.\",\n  \"address_verification_required\": true\n}\n```",
+        "cleaned": "{\n  \"forum_family\": \"Consumer Protection Authority\",\n  \"commission_level\": \"District Consumer Disputes Redressal Commission\",\n  \"reasoning\": \"The claim value is Rs. 78,999, which falls within the District Commission's jurisdiction (between Rs. 1,00,000 and above, but this case involves a straightforward defect complaint with claim value below Rs. 1 crore, making District Commission appropriate for initial filing). The case involves a clear consumer dispute under the Consumer Protection Act, 2019 regarding defective goods (gaming laptop with motherboard fault), defective service (seller's refusal of replacement despite manufacturing defect), and violation of return policy. The defect manifested within 4 days of delivery, establishing prima facie manufacturing defect. The seller's refusal of replacement despite authorized service centre diagnosis constitutes unfair trade practice and breach of warranty.\",\n  \"territorial_basis\": \"The territorial jurisdiction shall be determined by: (1) the place of delivery (3 August 2026); (2) the place where the consumer resides or works; or (3) the place where the cause of action arose (where the defect was discovered on 7 August 2026). The consumer should file in the District Consumer Disputes Redressal Commission having jurisdiction over the area where the laptop was delivered or where the consumer's residence/workplace is located. If the seller operates online, jurisdiction extends to the consumer's location as per e-commerce provisions.\",\n  \"address_verification_required\": true\n}",
+        "parsed": {
+          "forum_family": "Consumer Protection Authority",
+          "commission_level": "District Consumer Disputes Redressal Commission",
+          "reasoning": "The claim value is Rs. 78,999, which falls within the District Commission's jurisdiction (between Rs. 1,00,000 and above, but this case involves a straightforward defect complaint with claim value below Rs. 1 crore, making District Commission appropriate for initial filing). The case involves a clear consumer dispute under the Consumer Protection Act, 2019 regarding defective goods (gaming laptop with motherboard fault), defective service (seller's refusal of replacement despite manufacturing defect), and violation of return policy. The defect manifested within 4 days of delivery, establishing prima facie manufacturing defect. The seller's refusal of replacement despite authorized service centre diagnosis constitutes unfair trade practice and breach of warranty.",
+          "territorial_basis": "The territorial jurisdiction shall be determined by: (1) the place of delivery (3 August 2026); (2) the place where the consumer resides or works; or (3) the place where the cause of action arose (where the defect was discovered on 7 August 2026). The consumer should file in the District Consumer Disputes Redressal Commission having jurisdiction over the area where the laptop was delivered or where the consumer's residence/workplace is located. If the seller operates online, jurisdiction extends to the consumer's location as per e-commerce provisions.",
+          "address_verification_required": true
+        },
+        "error": null,
+        "input_tokens": 414,
+        "output_tokens": 342
+      },
+      "attempt_2": null,
+      "final_status": "PASSED_FIRST_TIME"
+    },
+    {
+      "stage": "limitation_check",
+      "prompt_sent": "Assess whether the claim is within the statutory limitation period under Indian law.\n\nTIMELINE OF EVENTS:\n- [T001] 2026-08-01: Gaming laptop purchased online for Rs. 78,999 for personal use\n- [T002] 2026-08-03: Gaming laptop delivered to consumer\n- [T003] 2026-08-07: Laptop began shutting down repeatedly; consumer brought it to authorized service centre which diagnosed motherboard fault\n- [T004] 2026-08-07: Consumer contacted seller requesting full replacement citing return policy for manufacturing defects; seller refused replacement and offered only repair\n\nEXTRACTED FACTS:\n- [F001] Gaming laptop purchased online for Rs. 78,999\n- [F002] Purchase date: 1 August 2026\n- [F003] Delivery date: 3 August 2026\n- [F004] Laptop began shutting down repeatedly starting 7 August 2026\n- [F005] Authorized service centre diagnosed motherboard fault\n- [F006] Service job sheet dated 7 August 2026\n- [F007] Consumer requested full replacement from seller citing return policy for manufacturing defects\n- [F008] Seller refused replacement and offered only repair\n- [F009] Laptop purchased for personal use\n- [F010] Defect occurred within 4 days of delivery\n\nSchema and format instructions:\nReturn only JSON with no prose or markdown fences: {\"result\":\"NO_APPARENT_ISSUE\",\"cause_of_action_date\":\"YYYY-MM-DD\",\"assessment_date\":\"YYYY-MM-DD\",\"reasoning\":\"string\"}.",
+      "expected_schema": {
+        "properties": {
+          "result": {
+            "title": "Result",
+            "type": "string"
+          },
+          "cause_of_action_date": {
+            "title": "Cause Of Action Date",
+            "type": "string"
+          },
+          "assessment_date": {
+            "title": "Assessment Date",
+            "type": "string"
+          },
+          "reasoning": {
+            "title": "Reasoning",
+            "type": "string"
+          }
+        },
+        "required": [
+          "result",
+          "cause_of_action_date",
+          "assessment_date",
+          "reasoning"
+        ],
+        "title": "LimitationOutput",
+        "type": "object"
+      },
+      "attempt_1": {
+        "raw": "```json\n{\n  \"result\": \"WITHIN_LIMITATION_PERIOD\",\n  \"cause_of_action_date\": \"2026-08-07\",\n  \"assessment_date\": \"2026-08-07\",\n  \"reasoning\": \"Under the Consumer Protection Act, 2019, a consumer complaint must be filed within 2 years from the date of cause of action. The cause of action arose on 2026-08-07 when the defect was discovered and the seller refused replacement. The claim is well within the 2-year statutory limitation period. Additionally, under the Indian Sale of Goods Act, 1930, goods must be fit for purpose and free from defects. The defect manifesting within 4 days of delivery (2026-08-07) establishes a prima facie manufacturing defect, and the consumer's right to claim replacement is preserved. No limitation period issue exists if the claim is filed before 2028-08-07.\"\n}\n```",
+        "cleaned": "{\n  \"result\": \"WITHIN_LIMITATION_PERIOD\",\n  \"cause_of_action_date\": \"2026-08-07\",\n  \"assessment_date\": \"2026-08-07\",\n  \"reasoning\": \"Under the Consumer Protection Act, 2019, a consumer complaint must be filed within 2 years from the date of cause of action. The cause of action arose on 2026-08-07 when the defect was discovered and the seller refused replacement. The claim is well within the 2-year statutory limitation period. Additionally, under the Indian Sale of Goods Act, 1930, goods must be fit for purpose and free from defects. The defect manifesting within 4 days of delivery (2026-08-07) establishes a prima facie manufacturing defect, and the consumer's right to claim replacement is preserved. No limitation period issue exists if the claim is filed before 2028-08-07.\"\n}",
+        "parsed": {
+          "result": "WITHIN_LIMITATION_PERIOD",
+          "cause_of_action_date": "2026-08-07",
+          "assessment_date": "2026-08-07",
+          "reasoning": "Under the Consumer Protection Act, 2019, a consumer complaint must be filed within 2 years from the date of cause of action. The cause of action arose on 2026-08-07 when the defect was discovered and the seller refused replacement. The claim is well within the 2-year statutory limitation period. Additionally, under the Indian Sale of Goods Act, 1930, goods must be fit for purpose and free from defects. The defect manifesting within 4 days of delivery (2026-08-07) establishes a prima facie manufacturing defect, and the consumer's right to claim replacement is preserved. No limitation period issue exists if the claim is filed before 2028-08-07."
+        },
+        "error": null,
+        "input_tokens": 376,
+        "output_tokens": 222
+      },
+      "attempt_2": null,
+      "final_status": "PASSED_FIRST_TIME"
+    },
+    {
+      "stage": "evidence_issue_mapping",
+      "prompt_sent": "Map each legal issue to the uploaded evidence items.\n\nLEGAL ISSUES:\n- [I001] Whether the laptop contains a manufacturing defect covered under the Consumer Protection Act, 2019 and Indian Sale of Goods Act, 1930?\n- [I002] Whether the consumer is entitled to replacement rather than repair under the return/replacement policy for manufacturing defects?\n- [I003] Whether the seller's refusal to replace and insistence on repair violates consumer rights under the Consumer Protection Act, 2019?\n- [I004] Whether the defect manifesting within 4 days of delivery creates a presumption of manufacturing defect or breach of warranty of merchantability?\n- [I005] Whether the consumer is entitled to compensation for loss of use, inconvenience, and mental harassment due to the seller's refusal to replace the defective product?\n- [I006] What are the applicable terms of the seller's return policy for manufacturing defects, and does it mandate replacement or permit repair as an alternative?\n\nEXTRACTED FACTS:\n- [F001] Gaming laptop purchased online for Rs. 78,999\n- [F002] Purchase date: 1 August 2026\n- [F003] Delivery date: 3 August 2026\n- [F004] Laptop began shutting down repeatedly starting 7 August 2026\n- [F005] Authorized service centre diagnosed motherboard fault\n- [F006] Service job sheet dated 7 August 2026\n- [F007] Consumer requested full replacement from seller citing return policy for manufacturing defects\n- [F008] Seller refused replacement and offered only repair\n- [F009] Laptop purchased for personal use\n- [F010] Defect occurred within 4 days of delivery\n\nUPLOADED EVIDENCE:\n- [E001] purchase_invoice.pdf: Purchase invoice for gaming laptop Rs. 78,999 delivered 3 Aug 2026\n- [E002] service_jobsheet.pdf: Authorized service centre job sheet showing motherboard fault dated 7 Aug 2026\n- [E003] seller_refusal_email.pdf: Email correspondence where seller refused replacement and offered only repair\n\nSchema and format instructions:\nReturn only JSON with no prose or markdown fences: {\"mappings\":[{\"issue_id\":\"I001\",\"status\":\"SUPPORTED\",\"evidence_ids\":[\"E001\"],\"note\":\"string\"}]}.",
+      "expected_schema": {
+        "$defs": {
+          "EvidenceCoverage": {
+            "properties": {
+              "issue_id": {
+                "title": "Issue Id",
+                "type": "string"
+              },
+              "status": {
+                "title": "Status",
+                "type": "string"
+              },
+              "evidence_ids": {
+                "default": [],
+                "items": {
+                  "type": "string"
+                },
+                "title": "Evidence Ids",
+                "type": "array"
+              },
+              "note": {
+                "title": "Note",
+                "type": "string"
+              }
+            },
+            "required": [
+              "issue_id",
+              "status",
+              "note"
+            ],
+            "title": "EvidenceCoverage",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "mappings": {
+            "items": {
+              "$ref": "#/$defs/EvidenceCoverage"
+            },
+            "title": "Mappings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "mappings"
+        ],
+        "title": "EvidenceMappingOutput",
+        "type": "object"
+      },
+      "attempt_1": {
+        "raw": "```json\n{\n  \"mappings\": [\n    {\n      \"issue_id\": \"I001\",\n      \"status\": \"SUPPORTED\",\n      \"evidence_ids\": [\"E001\", \"E002\"],\n      \"note\": \"Purchase invoice establishes product details and delivery date. Service jobsheet confirms motherboard fault diagnosis by authorized service centre, establishing presence of defect.\"\n    },\n    {\n      \"issue_id\": \"I002\",\n      \"status\": \"PARTIALLY_SUPPORTED\",\n      \"evidence_ids\": [\"E003\"],\n      \"note\": \"Seller's refusal email evidences the replacement vs repair dispute, but actual policy terms are not provided in uploaded evidence.\"\n    },\n    {\n      \"issue_id\": \"I003\",\n      \"status\": \"SUPPORTED\",\n      \"evidence_ids\": [\"E003\"],\n      \"note\": \"Email correspondence directly documents seller's refusal to replace and insistence on repair only.\"\n    },\n    {\n      \"issue_id\": \"I004\",\n      \"status\": \"SUPPORTED\",\n      \"evidence_ids\": [\"E001\", \"E002\"],\n      \"note\": \"Purchase invoice shows delivery on 3 Aug 2026. Service jobsheet dated 7 Aug 2026 confirms defect manifested within 4 days of delivery, establishing temporal proximity to delivery.\"\n    },\n    {\n      \"issue_id\": \"I005\",\n      \"status\": \"NOT_SUPPORTED\",\n      \"evidence_ids\": [],\n      \"note\": \"No evidence provided documenting actual loss, inconvenience suffered, or mental harassment. Claims regarding damages are not substantiated in uploaded documents.\"\n    },\n    {\n      \"issue_id\": \"I006\",\n      \"status\": \"NOT_SUPPORTED\",\n      \"evidence_ids\": [\"E003\"],\n      \"note\": \"Email shows seller's position but actual return/replacement policy document terms are not provided in uploaded evidence. Policy terms cannot be determined from correspondence alone.\"\n    }\n  ]\n}\n```",
+        "cleaned": "{\n  \"mappings\": [\n    {\n      \"issue_id\": \"I001\",\n      \"status\": \"SUPPORTED\",\n      \"evidence_ids\": [\"E001\", \"E002\"],\n      \"note\": \"Purchase invoice establishes product details and delivery date. Service jobsheet confirms motherboard fault diagnosis by authorized service centre, establishing presence of defect.\"\n    },\n    {\n      \"issue_id\": \"I002\",\n      \"status\": \"PARTIALLY_SUPPORTED\",\n      \"evidence_ids\": [\"E003\"],\n      \"note\": \"Seller's refusal email evidences the replacement vs repair dispute, but actual policy terms are not provided in uploaded evidence.\"\n    },\n    {\n      \"issue_id\": \"I003\",\n      \"status\": \"SUPPORTED\",\n      \"evidence_ids\": [\"E003\"],\n      \"note\": \"Email correspondence directly documents seller's refusal to replace and insistence on repair only.\"\n    },\n    {\n      \"issue_id\": \"I004\",\n      \"status\": \"SUPPORTED\",\n      \"evidence_ids\": [\"E001\", \"E002\"],\n      \"note\": \"Purchase invoice shows delivery on 3 Aug 2026. Service jobsheet dated 7 Aug 2026 confirms defect manifested within 4 days of delivery, establishing temporal proximity to delivery.\"\n    },\n    {\n      \"issue_id\": \"I005\",\n      \"status\": \"NOT_SUPPORTED\",\n      \"evidence_ids\": [],\n      \"note\": \"No evidence provided documenting actual loss, inconvenience suffered, or mental harassment. Claims regarding damages are not substantiated in uploaded documents.\"\n    },\n    {\n      \"issue_id\": \"I006\",\n      \"status\": \"NOT_SUPPORTED\",\n      \"evidence_ids\": [\"E003\"],\n      \"note\": \"Email shows seller's position but actual return/replacement policy document terms are not provided in uploaded evidence. Policy terms cannot be determined from correspondence alone.\"\n    }\n  ]\n}",
+        "parsed": {
+          "mappings": [
+            {
+              "issue_id": "I001",
+              "status": "SUPPORTED",
+              "evidence_ids": [
+                "E001",
+                "E002"
+              ],
+              "note": "Purchase invoice establishes product details and delivery date. Service jobsheet confirms motherboard fault diagnosis by authorized service centre, establishing presence of defect."
+            },
+            {
+              "issue_id": "I002",
+              "status": "PARTIALLY_SUPPORTED",
+              "evidence_ids": [
+                "E003"
+              ],
+              "note": "Seller's refusal email evidences the replacement vs repair dispute, but actual policy terms are not provided in uploaded evidence."
+            },
+            {
+              "issue_id": "I003",
+              "status": "SUPPORTED",
+              "evidence_ids": [
+                "E003"
+              ],
+              "note": "Email correspondence directly documents seller's refusal to replace and insistence on repair only."
+            },
+            {
+              "issue_id": "I004",
+              "status": "SUPPORTED",
+              "evidence_ids": [
+                "E001",
+                "E002"
+              ],
+              "note": "Purchase invoice shows delivery on 3 Aug 2026. Service jobsheet dated 7 Aug 2026 confirms defect manifested within 4 days of delivery, establishing temporal proximity to delivery."
+            },
+            {
+              "issue_id": "I005",
+              "status": "NOT_SUPPORTED",
+              "evidence_ids": [],
+              "note": "No evidence provided documenting actual loss, inconvenience suffered, or mental harassment. Claims regarding damages are not substantiated in uploaded documents."
+            },
+            {
+              "issue_id": "I006",
+              "status": "NOT_SUPPORTED",
+              "evidence_ids": [
+                "E003"
+              ],
+              "note": "Email shows seller's position but actual return/replacement policy document terms are not provided in uploaded evidence. Policy terms cannot be determined from correspondence alone."
+            }
+          ]
+        },
+        "error": null,
+        "input_tokens": 543,
+        "output_tokens": 463
+      },
+      "attempt_2": null,
+      "final_status": "PASSED_FIRST_TIME"
+    },
+    {
+      "stage": "claimant_counsel",
+      "prompt_sent": "Develop strong legal arguments supporting the claimant/consumer.\n\nCLIENT STORY:\nI purchased a gaming laptop online for Rs. 78,999 on 1 August 2026 for personal use. The laptop was delivered on 3 August 2026. However, starting 7 August 2026, it began shutting down repeatedly. I brought it to an authorized service centre, and the job sheet states a motherboard fault. I contacted the seller requesting a full replacement as per the return policy for manufacturing defects, but the seller refused replacement and offered only repair.\n\nEXTRACTED FACTS:\n- [F001] Gaming laptop purchased online for Rs. 78,999\n- [F002] Purchase date: 1 August 2026\n- [F003] Delivery date: 3 August 2026\n- [F004] Laptop began shutting down repeatedly starting 7 August 2026\n- [F005] Authorized service centre diagnosed motherboard fault\n- [F006] Service job sheet dated 7 August 2026\n- [F007] Consumer requested full replacement from seller citing return policy for manufacturing defects\n- [F008] Seller refused replacement and offered only repair\n- [F009] Laptop purchased for personal use\n- [F010] Defect occurred within 4 days of delivery\n\nLEGAL ISSUES:\n- [I001] Whether the laptop contains a manufacturing defect covered under the Consumer Protection Act, 2019 and Indian Sale of Goods Act, 1930?\n- [I002] Whether the consumer is entitled to replacement rather than repair under the return/replacement policy for manufacturing defects?\n- [I003] Whether the seller's refusal to replace and insistence on repair violates consumer rights under the Consumer Protection Act, 2019?\n- [I004] Whether the defect manifesting within 4 days of delivery creates a presumption of manufacturing defect or breach of warranty of merchantability?\n- [I005] Whether the consumer is entitled to compensation for loss of use, inconvenience, and mental harassment due to the seller's refusal to replace the defective product?\n- [I006] What are the applicable terms of the seller's return policy for manufacturing defects, and does it mandate replacement or permit repair as an alternative?\n\nVERIFIED PROVISIONS:\n- [CPA-2-7] Section 2(7) - Consumer: The client qualifies as a consumer under this provision as they purchased the gaming laptop for personal use and not for resale or commercial purpose, establishing standing to file a consumer protection complaint.\n- [CPA-2-10] Section 2(10) - Defect: The motherboard fault diagnosed by the authorized service centre constitutes a defect as defined - a fault or imperfection in the quality of goods. This defect manifested within 4 days of delivery, establishing a manufacturing defect claim.\n- [CPA-2-47] Section 2(47) - Unfair trade practice: The seller's refusal to provide replacement as per the stated return policy for manufacturing defects while offering only repair may constitute an unfair or deceptive trade practice, as it potentially involves misrepresentation of the return policy terms to the consumer.\n- [CPA-39] Section 39 - Reliefs: This provision empowers the District Commission to grant relief including replacement, repair, refund, and compensation. It is directly applicable as the consumer is seeking replacement as a remedy for the manufacturing defect and the seller's refusal to comply with the return policy.\n- [CPA-34] Section 34 - Jurisdiction of District Commission: The District Commission has jurisdiction to entertain this complaint. With a purchase price of Rs. 78,999, the pecuniary value falls within the District Commission's jurisdiction limits (up to Rs. 50 lakh).\n- [CPA-35] Section 35 - Manner of complaint: This provision establishes the procedural requirement for filing a complaint before the appropriate Consumer Commission, which is applicable to the client's potential remedy.\n- [CPA-69] Section 69 - Limitation period: The consumer must file the complaint within two years from the date of the cause of action (7 August 2026, when the defect manifested). This provision establishes the temporal limit within which the dispute must be pursued.\n- [RULE-3-2021] 2021 Rules Rule 3 - Pecuniary jurisdiction: With consideration paid of Rs. 78,999, the pecuniary jurisdiction lies with the District Commission (for amounts up to Rs. 50 lakh), confirming the appropriate forum for filing the consumer complaint.\n\nFORUM:\nForum Family: Consumer Protection Authority, Commission Level: District Consumer Disputes Redressal Commission, Basis: The territorial jurisdiction shall be determined by: (1) the place of delivery (3 August 2026); (2) the place where the consumer resides or works; or (3) the place where the cause of action arose (where the defect was discovered on 7 August 2026). The consumer should file in the District Consumer Disputes Redressal Commission having jurisdiction over the area where the laptop was delivered or where the consumer's residence/workplace is located. If the seller operates online, jurisdiction extends to the consumer's location as per e-commerce provisions.\n\nSchema and format instructions:\nReturn only JSON with no prose or markdown fences: {\"points\":[\"string\"]}.",
+      "expected_schema": {
+        "properties": {
+          "points": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Points",
+            "type": "array"
+          }
+        },
+        "required": [
+          "points"
+        ],
+        "title": "ClaimantOutput",
+        "type": "object"
+      },
+      "attempt_1": {
+        "raw": "```json\n{\n  \"points\": [\n    \"The consumer qualifies as a protected consumer under Section 2(7) CPA 2019, having purchased the gaming laptop for personal use and not for commercial resale, establishing clear legal standing to pursue remedies\",\n    \"The motherboard fault diagnosed by the authorized service centre constitutes a 'defect' under Section 2(10) CPA 2019, defined as a fault or imperfection in the quality of goods supplied\",\n    \"The defect manifesting within 4 days of delivery (7 August 2026) creates a strong presumption of manufacturing defect rather than user-induced damage, as the product failed immediately upon normal use\",\n    \"Under the Sale of Goods Act 1930, goods sold must be of merchantable quality and fit for purpose; a laptop that shuts down repeatedly within days of delivery breaches the implied warranty of merchantability\",\n    \"The seller's refusal to provide replacement as per the stated return policy for manufacturing defects, while offering only repair, constitutes an unfair and deceptive trade practice under Section 2(47) CPA 2019\",\n    \"The seller's conduct represents a misrepresentation of the return policy terms - advertising replacement for manufacturing defects but refusing to honor this commitment violates consumer trust and violates CPA provisions on unfair trade practices\",\n    \"Section 39 CPA 2019 expressly empowers the District Commission to grant replacement as a remedy for defective goods, and the consumer is entitled to this relief when defects manifest within days of purchase\",\n    \"The consumer should not be forced to accept repair as an alternative when the product exhibits a critical manufacturing defect; replacement is the appropriate remedy for goods with latent defects discovered within the warranty period\",\n    \"The seller's insistence on repair rather than replacement causes loss of use, inconvenience, and mental harassment, entitling the consumer to compensation under Section 39 CPA 2019 for non-pecuniary losses\",\n    \"The purchase price of Rs. 78,999 falls within the District Commission's pecuniary jurisdiction (up to Rs. 50 lakh under Rule 3 of 2021 Rules), confirming the proper forum for this complaint\",\n    \"The two-year limitation period under Section 69 CPA 2019 commences from 7 August 2026 when the defect manifested, providing ample time for the consumer to pursue remedies without temporal constraints\",\n    \"Territorial jurisdiction lies with the District Commission where the laptop was delivered, where the consumer resides/works, or where the cause of action arose; for online sellers, the consumer's location is the applicable jurisdiction\",\n    \"The defect occurring within 4 days of delivery negates any argument that the consumer caused the damage or failed to maintain the product properly, placing the burden of proof on the seller to demonstrate otherwise\",\n    \"The authorized service centre's job sheet documenting the motherboard fault constitutes independent technical evidence supporting the consumer's claim for manufacturing defect\",\n    \"Replacement is legally and commercially more appropriate than repair for a high-value gaming laptop with critical hardware failure, as repair may not restore full functionality and creates ongoing uncertainty regarding product reliability\",\n    \"The seller's refusal to comply with its own stated return policy for manufacturing defects exposes it to liability for breach of contract in addition to consumer protection violations\",\n    \"Under CPA 2019 jurisprudence, consumers purchasing high-value electronics are entitled to replacement for manufacturing defects discovered within days of delivery, not mere repair\",\n    \"The consumer's immediate discovery and reporting of the defect demonstrates diligence and good faith, supporting the claim that this is a latent manufacturing defect rather than damage from use or negligence\",\n    \"Compensation for mental harassment and inconvenience is warranted due to the seller's unjustified refusal to provide contractually promised replacement and the consumer's frustration in pursuing remedies\",\n    \"The seller's conduct violates the spirit of consumer protection laws by attempting to circumvent replacement obligations through repair offers, thereby limiting the consumer's statutory rights to obtain satisfactory goods\"\n  ]\n}\n```",
+        "cleaned": "{\n  \"points\": [\n    \"The consumer qualifies as a protected consumer under Section 2(7) CPA 2019, having purchased the gaming laptop for personal use and not for commercial resale, establishing clear legal standing to pursue remedies\",\n    \"The motherboard fault diagnosed by the authorized service centre constitutes a 'defect' under Section 2(10) CPA 2019, defined as a fault or imperfection in the quality of goods supplied\",\n    \"The defect manifesting within 4 days of delivery (7 August 2026) creates a strong presumption of manufacturing defect rather than user-induced damage, as the product failed immediately upon normal use\",\n    \"Under the Sale of Goods Act 1930, goods sold must be of merchantable quality and fit for purpose; a laptop that shuts down repeatedly within days of delivery breaches the implied warranty of merchantability\",\n    \"The seller's refusal to provide replacement as per the stated return policy for manufacturing defects, while offering only repair, constitutes an unfair and deceptive trade practice under Section 2(47) CPA 2019\",\n    \"The seller's conduct represents a misrepresentation of the return policy terms - advertising replacement for manufacturing defects but refusing to honor this commitment violates consumer trust and violates CPA provisions on unfair trade practices\",\n    \"Section 39 CPA 2019 expressly empowers the District Commission to grant replacement as a remedy for defective goods, and the consumer is entitled to this relief when defects manifest within days of purchase\",\n    \"The consumer should not be forced to accept repair as an alternative when the product exhibits a critical manufacturing defect; replacement is the appropriate remedy for goods with latent defects discovered within the warranty period\",\n    \"The seller's insistence on repair rather than replacement causes loss of use, inconvenience, and mental harassment, entitling the consumer to compensation under Section 39 CPA 2019 for non-pecuniary losses\",\n    \"The purchase price of Rs. 78,999 falls within the District Commission's pecuniary jurisdiction (up to Rs. 50 lakh under Rule 3 of 2021 Rules), confirming the proper forum for this complaint\",\n    \"The two-year limitation period under Section 69 CPA 2019 commences from 7 August 2026 when the defect manifested, providing ample time for the consumer to pursue remedies without temporal constraints\",\n    \"Territorial jurisdiction lies with the District Commission where the laptop was delivered, where the consumer resides/works, or where the cause of action arose; for online sellers, the consumer's location is the applicable jurisdiction\",\n    \"The defect occurring within 4 days of delivery negates any argument that the consumer caused the damage or failed to maintain the product properly, placing the burden of proof on the seller to demonstrate otherwise\",\n    \"The authorized service centre's job sheet documenting the motherboard fault constitutes independent technical evidence supporting the consumer's claim for manufacturing defect\",\n    \"Replacement is legally and commercially more appropriate than repair for a high-value gaming laptop with critical hardware failure, as repair may not restore full functionality and creates ongoing uncertainty regarding product reliability\",\n    \"The seller's refusal to comply with its own stated return policy for manufacturing defects exposes it to liability for breach of contract in addition to consumer protection violations\",\n    \"Under CPA 2019 jurisprudence, consumers purchasing high-value electronics are entitled to replacement for manufacturing defects discovered within days of delivery, not mere repair\",\n    \"The consumer's immediate discovery and reporting of the defect demonstrates diligence and good faith, supporting the claim that this is a latent manufacturing defect rather than damage from use or negligence\",\n    \"Compensation for mental harassment and inconvenience is warranted due to the seller's unjustified refusal to provide contractually promised replacement and the consumer's frustration in pursuing remedies\",\n    \"The seller's conduct violates the spirit of consumer protection laws by attempting to circumvent replacement obligations through repair offers, thereby limiting the consumer's statutory rights to obtain satisfactory goods\"\n  ]\n}",
+        "parsed": {
+          "points": [
+            "The consumer qualifies as a protected consumer under Section 2(7) CPA 2019, having purchased the gaming laptop for personal use and not for commercial resale, establishing clear legal standing to pursue remedies",
+            "The motherboard fault diagnosed by the authorized service centre constitutes a 'defect' under Section 2(10) CPA 2019, defined as a fault or imperfection in the quality of goods supplied",
+            "The defect manifesting within 4 days of delivery (7 August 2026) creates a strong presumption of manufacturing defect rather than user-induced damage, as the product failed immediately upon normal use",
+            "Under the Sale of Goods Act 1930, goods sold must be of merchantable quality and fit for purpose; a laptop that shuts down repeatedly within days of delivery breaches the implied warranty of merchantability",
+            "The seller's refusal to provide replacement as per the stated return policy for manufacturing defects, while offering only repair, constitutes an unfair and deceptive trade practice under Section 2(47) CPA 2019",
+            "The seller's conduct represents a misrepresentation of the return policy terms - advertising replacement for manufacturing defects but refusing to honor this commitment violates consumer trust and violates CPA provisions on unfair trade practices",
+            "Section 39 CPA 2019 expressly empowers the District Commission to grant replacement as a remedy for defective goods, and the consumer is entitled to this relief when defects manifest within days of purchase",
+            "The consumer should not be forced to accept repair as an alternative when the product exhibits a critical manufacturing defect; replacement is the appropriate remedy for goods with latent defects discovered within the warranty period",
+            "The seller's insistence on repair rather than replacement causes loss of use, inconvenience, and mental harassment, entitling the consumer to compensation under Section 39 CPA 2019 for non-pecuniary losses",
+            "The purchase price of Rs. 78,999 falls within the District Commission's pecuniary jurisdiction (up to Rs. 50 lakh under Rule 3 of 2021 Rules), confirming the proper forum for this complaint",
+            "The two-year limitation period under Section 69 CPA 2019 commences from 7 August 2026 when the defect manifested, providing ample time for the consumer to pursue remedies without temporal constraints",
+            "Territorial jurisdiction lies with the District Commission where the laptop was delivered, where the consumer resides/works, or where the cause of action arose; for online sellers, the consumer's location is the applicable jurisdiction",
+            "The defect occurring within 4 days of delivery negates any argument that the consumer caused the damage or failed to maintain the product properly, placing the burden of proof on the seller to demonstrate otherwise",
+            "The authorized service centre's job sheet documenting the motherboard fault constitutes independent technical evidence supporting the consumer's claim for manufacturing defect",
+            "Replacement is legally and commercially more appropriate than repair for a high-value gaming laptop with critical hardware failure, as repair may not restore full functionality and creates ongoing uncertainty regarding product reliability",
+            "The seller's refusal to comply with its own stated return policy for manufacturing defects exposes it to liability for breach of contract in addition to consumer protection violations",
+            "Under CPA 2019 jurisprudence, consumers purchasing high-value electronics are entitled to replacement for manufacturing defects discovered within days of delivery, not mere repair",
+            "The consumer's immediate discovery and reporting of the defect demonstrates diligence and good faith, supporting the claim that this is a latent manufacturing defect rather than damage from use or negligence",
+            "Compensation for mental harassment and inconvenience is warranted due to the seller's unjustified refusal to provide contractually promised replacement and the consumer's frustration in pursuing remedies",
+            "The seller's conduct violates the spirit of consumer protection laws by attempting to circumvent replacement obligations through repair offers, thereby limiting the consumer's statutory rights to obtain satisfactory goods"
+          ]
+        },
+        "error": null,
+        "input_tokens": 1209,
+        "output_tokens": 922
+      },
+      "attempt_2": null,
+      "final_status": "PASSED_FIRST_TIME"
+    },
+    {
+      "stage": "opponent_counsel",
+      "prompt_sent": "Anticipate legal objections and defenses from the opposing party.\n\nEXTRACTED FACTS:\n- [F001] Gaming laptop purchased online for Rs. 78,999\n- [F002] Purchase date: 1 August 2026\n- [F003] Delivery date: 3 August 2026\n- [F004] Laptop began shutting down repeatedly starting 7 August 2026\n- [F005] Authorized service centre diagnosed motherboard fault\n- [F006] Service job sheet dated 7 August 2026\n- [F007] Consumer requested full replacement from seller citing return policy for manufacturing defects\n- [F008] Seller refused replacement and offered only repair\n- [F009] Laptop purchased for personal use\n- [F010] Defect occurred within 4 days of delivery\n\nLEGAL ISSUES:\n- [I001] Whether the laptop contains a manufacturing defect covered under the Consumer Protection Act, 2019 and Indian Sale of Goods Act, 1930?\n- [I002] Whether the consumer is entitled to replacement rather than repair under the return/replacement policy for manufacturing defects?\n- [I003] Whether the seller's refusal to replace and insistence on repair violates consumer rights under the Consumer Protection Act, 2019?\n- [I004] Whether the defect manifesting within 4 days of delivery creates a presumption of manufacturing defect or breach of warranty of merchantability?\n- [I005] Whether the consumer is entitled to compensation for loss of use, inconvenience, and mental harassment due to the seller's refusal to replace the defective product?\n- [I006] What are the applicable terms of the seller's return policy for manufacturing defects, and does it mandate replacement or permit repair as an alternative?\n\nCLAIMANT ARGUMENTS:\n- The consumer qualifies as a protected consumer under Section 2(7) CPA 2019, having purchased the gaming laptop for personal use and not for commercial resale, establishing clear legal standing to pursue remedies\n- The motherboard fault diagnosed by the authorized service centre constitutes a 'defect' under Section 2(10) CPA 2019, defined as a fault or imperfection in the quality of goods supplied\n- The defect manifesting within 4 days of delivery (7 August 2026) creates a strong presumption of manufacturing defect rather than user-induced damage, as the product failed immediately upon normal use\n- Under the Sale of Goods Act 1930, goods sold must be of merchantable quality and fit for purpose; a laptop that shuts down repeatedly within days of delivery breaches the implied warranty of merchantability\n- The seller's refusal to provide replacement as per the stated return policy for manufacturing defects, while offering only repair, constitutes an unfair and deceptive trade practice under Section 2(47) CPA 2019\n- The seller's conduct represents a misrepresentation of the return policy terms - advertising replacement for manufacturing defects but refusing to honor this commitment violates consumer trust and violates CPA provisions on unfair trade practices\n- Section 39 CPA 2019 expressly empowers the District Commission to grant replacement as a remedy for defective goods, and the consumer is entitled to this relief when defects manifest within days of purchase\n- The consumer should not be forced to accept repair as an alternative when the product exhibits a critical manufacturing defect; replacement is the appropriate remedy for goods with latent defects discovered within the warranty period\n- The seller's insistence on repair rather than replacement causes loss of use, inconvenience, and mental harassment, entitling the consumer to compensation under Section 39 CPA 2019 for non-pecuniary losses\n- The purchase price of Rs. 78,999 falls within the District Commission's pecuniary jurisdiction (up to Rs. 50 lakh under Rule 3 of 2021 Rules), confirming the proper forum for this complaint\n- The two-year limitation period under Section 69 CPA 2019 commences from 7 August 2026 when the defect manifested, providing ample time for the consumer to pursue remedies without temporal constraints\n- Territorial jurisdiction lies with the District Commission where the laptop was delivered, where the consumer resides/works, or where the cause of action arose; for online sellers, the consumer's location is the applicable jurisdiction\n- The defect occurring within 4 days of delivery negates any argument that the consumer caused the damage or failed to maintain the product properly, placing the burden of proof on the seller to demonstrate otherwise\n- The authorized service centre's job sheet documenting the motherboard fault constitutes independent technical evidence supporting the consumer's claim for manufacturing defect\n- Replacement is legally and commercially more appropriate than repair for a high-value gaming laptop with critical hardware failure, as repair may not restore full functionality and creates ongoing uncertainty regarding product reliability\n- The seller's refusal to comply with its own stated return policy for manufacturing defects exposes it to liability for breach of contract in addition to consumer protection violations\n- Under CPA 2019 jurisprudence, consumers purchasing high-value electronics are entitled to replacement for manufacturing defects discovered within days of delivery, not mere repair\n- The consumer's immediate discovery and reporting of the defect demonstrates diligence and good faith, supporting the claim that this is a latent manufacturing defect rather than damage from use or negligence\n- Compensation for mental harassment and inconvenience is warranted due to the seller's unjustified refusal to provide contractually promised replacement and the consumer's frustration in pursuing remedies\n- The seller's conduct violates the spirit of consumer protection laws by attempting to circumvent replacement obligations through repair offers, thereby limiting the consumer's statutory rights to obtain satisfactory goods\n\nSchema and format instructions:\nReturn only JSON with no prose or markdown fences: {\"objections\":[{\"objection_id\":\"O001\",\"text\":\"string\",\"targets\":[\"F001\"]}]}.",
+      "expected_schema": {
+        "$defs": {
+          "Objection": {
+            "properties": {
+              "objection_id": {
+                "title": "Objection Id",
+                "type": "string"
+              },
+              "text": {
+                "title": "Text",
+                "type": "string"
+              },
+              "targets": {
+                "default": [],
+                "items": {
+                  "type": "string"
+                },
+                "title": "Targets",
+                "type": "array"
+              }
+            },
+            "required": [
+              "objection_id",
+              "text"
+            ],
+            "title": "Objection",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "objections": {
+            "items": {
+              "$ref": "#/$defs/Objection"
+            },
+            "title": "Objections",
+            "type": "array"
+          }
+        },
+        "required": [
+          "objections"
+        ],
+        "title": "OpponentOutput",
+        "type": "object"
+      },
+      "attempt_1": {
+        "raw": "```json\n{\n  \"objections\": [\n    {\n      \"objection_id\": \"O001\",\n      \"text\": \"The consumer failed to establish that the defect was manufacturing-related and not caused by mishandling, improper use, or exposure to environmental factors during or after delivery. The 4-day timeline alone does not conclusively prove manufacturing defect without expert analysis of usage patterns.\",\n      \"targets\": [\"F004\", \"F010\"],\n      \"legal_basis\": \"Sale of Goods Act 1930 Section 16 - burden of proof on claimant to establish defect existed at time of delivery\"\n    },\n    {\n      \"objection_id\": \"O002\",\n      \"text\": \"The seller's return/replacement policy terms are not adequately established on record. The consumer has merely alleged such a policy exists without producing the complete policy document, purchase terms and conditions, or website screenshots contemporaneously dated to the purchase.\",\n      \"targets\": [\"F007\", \"I006\"],\n      \"legal_basis\": \"Contract interpretation requires production of original policy documents; oral or assumed terms are not enforceable\"\n    },\n    {\n      \"objection_id\": \"O003\",\n      \"text\": \"Repair by an authorized service centre is a reasonable and proportionate remedy for manufacturing defects under CPA 2019 Section 39. Replacement is not automatically mandated and the seller's offer to repair does not constitute unfair trade practice where repair can restore functionality.\",\n      \"targets\": [\"F008\", \"I002\"],\n      \"legal_basis\": \"CPA 2019 Section 39 provides District Commission discretion to grant replacement OR repair; replacement is not mandatory for all defects\"\n    },\n    {\n      \"objection_id\": \"O004\",\n      \"text\": \"The authorized service centre's diagnosis may be incomplete or incorrect. A single job sheet lacks independent verification and does not exclude alternative causes such as software malfunction, driver issues, power supply problems, or thermal management failures that do not constitute manufacturing defects.\",\n      \"targets\": [\"F005\", \"F006\"],\n      \"legal_basis\": \"Medical jurisprudence principle applies to technical defects - single opinion without peer review or second examination is insufficient proof\"\n    },\n    {\n      \"objection_id\": \"O005\",\n      \"text\": \"The consumer has not demonstrated that the defect manifested during normal use as per manufacturer specifications. Gaming laptops require specific operating conditions; the consumer may have subjected the laptop to intensive gaming, overclocking, or thermal stress immediately upon receipt, causing failure.\",\n      \"targets\": [\"F009\", \"F010\"],\n      \"legal_basis\": \"Implied warranty of merchantability applies to goods used according to normal purpose and manufacturer guidelines; abnormal stress voids warranty\"\n    },\n    {\n      \"objection_id\": \"O006\",\n      \"text\": \"The consumer's claim that repair causes 'loss of use' is speculative and self-inflicted. The consumer chose not to utilize repair services offered by the authorized centre. Refusing a remedy does not generate entitlement to additional compensation.\",\n      \"targets\": [\"I005\"],\n      \"legal_basis\": \"CPA 2019 jurisprudence requires consumers to mitigate damages; unreasonable refusal of available remedies bars compensation claims\"\n    },\n    {\n      \"objection_id\": \"O007\",\n      \"text\": \"No evidence establishes that the consumer suffered mental harassment beyond normal inconvenience of product defect. Mere frustration with the remedy offered does not meet the legal threshold for compensatory damages under Section 39 CPA 2019, which requires gross negligence or recklessness.\",\n      \"targets\": [\"I005\"],\n      \"legal_basis\": \"CPA 2019 Section 39(1)(g) requires demonstration of gross negligence or recklessness; ordinary commercial dispute does not qualify\"\n    },\n    {\n      \"objection_id\": \"O008\",\n      \"text\": \"The consumer's claim of breach of contract through misrepresentation of return policy is premature. The consumer has not exhausted the repair remedy offered and cannot claim breach until repair has been attempted and failed. Refusal to accept reasonable remedy prejudices the seller's defense.\",\n      \"targets\": [\"F008\", \"I003\"],\n      \"legal_basis\": \"Contract law principle - party alleging breach must demonstrate failure of essential obligation; alternative remedies must be exhausted\"\n    },\n    {\n      \"objection_id\": \"O009\",\n      \"text\": \"The service job sheet dated 7 August 2026 does not confirm when the diagnosis occurred or whether the diagnosis occurred after the consumer may have opened the device, run incompatible software, or caused internal damage through improper handling.\",\n      \"targets\": [\"F006\"],\n      \"legal_basis\": \"Chain of custody and contemporaneous documentation required; job sheet alone insufficient without testimony on examination procedures\"\n    },\n    {\n      \"objection_id\": \"O010\",\n      \"text\": \"The consumer's claim relies on presumption of manufacturing defect based solely on timing, but CPA 2019 does not establish automatic presumption for defects within 4 days. Presumption must be rebutted by seller only after consumer establishes prima facie case through technical evidence.\",\n      \"targets\": [\"I004\"],\n      \"legal_basis\": \"Burden of proof and presumptions under Indian Evidence Act 1872; timing alone insufficient for prima facie case\"\n    },\n    {\n      \"objection_id\": \"O011\",\n      \"text\": \"The seller did not violate Section 2(47) CPA 2019 (unfair/deceptive practice) by offering repair instead of replacement. Both are recognized remedies under Section 39, and offering the legally available remedy of repair does not constitute deception or misrepresentation.\",\n      \"targets\": [\"I003\"],\n      \"legal_basis\": \"CPA 2019 Section 2(47) requires deception or untruth; offering statutory remedy within seller's discretion is not deceptive\"\n    },\n    {\n      \"objection_id\": \"O012\",\n      \"text\": \"The consumer purchased a gaming laptop, which by definition involves high-performance components that may be subject to thermal stress and component sensitivity. The consumer bears responsibility for ensuring the device is used within manufacturer specifications immediately upon receipt.\",\n      \"targets\": [\"F001\", \"F009\"],\n      \"legal_basis\": \"Implied warranty of merchantability does not cover defects arising from misuse or failure to follow manufacturer usage guidelines\"\n    },\n    {\n      \"objection_id\": \"O013\",\n      \"text\": \"The consumer's claim assumes the return policy mandates replacement, but typical e-commerce policies provide repair as the primary remedy with replacement only after repair failure. The consumer has not provided the actual policy terms to prove otherwise.\",\n      \"targets\": [\"I006\"],\n      \"legal_basis\": \"Standard commercial practice and implied terms in e-commerce transactions allow repair as primary remedy\"\n    },\n    {\n      \"objection_id\": \"O014\",\n      \"text\": \"The consumer may have failed to provide proper care, storage, or protection during the critical 3-7 August 2026 window. Humidity, temperature exposure, power surges, or accidental drops during this period could cause motherboard failure without constituting manufacturing defect.\",\n      \"targets\": [\"F003\", \"F004\", \"F010\"],\n      \"legal_basis\": \"Warranty claims exclude defects arising from environmental exposure or failure to maintain product in reasonable condition\"\n    },\n    {\n      \"objection_id\": \"O015\",\n      \"text\": \"The consumer has not established financial loss or quantifiable damages beyond the price paid. Compensation for mental harassment requires extraordinary circumstances (gross negligence, intentional misconduct); ordinary commercial breach does not qualify.\",\n      \"targets\": [\"I005\"],\n      \"legal_basis\": \"Damages require quantifiable loss; distress claims require exceptional circumstances under tort law principles\"\n    },\n    {\n      \"objection_id\": \"O016\",\n      \"text\": \"The seller's jurisdiction defense: If the laptop was delivered through a logistics partner to an address controlled by the consumer, and the consumer resides in a different state than the seller's registered office, territorial jurisdiction may lie with seller's location, not consumer's location.\",\n      \"targets\": [\"I003\"],\n      \"legal_basis\": \"CPA 2019 Section 60 - jurisdiction determined by where cause of action arises; for online sales, dispute regarding proper forum is legitimate\"\n    },\n    {\n      \"objection_id\": \"O017\",\n      \"text\": \"The consumer's diligence claim (immediate reporting) is self-serving and expected behavior. Prompt reporting does not prove manufacturing defect and actually provides no independent value given the defect timing could result from multiple causes within the 4-day period.\",\n      \"targets\": [\"F010\"],\n      \"legal_basis\": \"Prompt reporting is standard practice and does not constitute independent evidence of manufacturing defect\"\n    },\n    {\n      \"objection_id\": \"O018\",\n      \"text\": \"The consumer cannot simultaneously claim the product was defective from manufacture while also asserting it was suitable for personal gaming use. If the device shut down repeatedly, the defect would be obvious and inspectable before or immediately upon purchase, suggesting consumer acceptance.\",\n      \"targets\": [\"F002\", \"F009\"],\n      \"legal_basis\": \"Doctrine of acceptance: consumer receiving and retaining defective goods without immediate protest may be deemed to have accepted the goods\"\n    },\n    {\n      \"objection_id\": \"O019\",\n      \"text\": \"Section 39 CPA 2019 grants District Commission authority to grant replacement, but this is discretionary ('may grant'), not mandatory. The Commission must consider proportionality, cost, and availability of repair as alternatives before ordering replacement.\",\n      \"targets\": [\"I002\"],\n      \"legal_basis\": \"CPA 2019 Section 39(1) uses permissive language ('may grant'); judicial discretion required\"\n    },\n    {\n      \"objection_id\": \"O020\",\n      \"text\": \"The consumer's argument that replacement is 'more appropriate' is subjective preference, not legal entitlement. High value of goods does not automatically mandate replacement remedy; proportionality and availability of repair must be considered.\",\n      \"targets\": [\"I002\"],\n      \"legal_basis\": \"Equitable remedy principles require least onerous remedy that addresses defect; replacement not automatic for expensive goods\"\n    }\n  ]\n}\n```",
+        "cleaned": "{\n  \"objections\": [\n    {\n      \"objection_id\": \"O001\",\n      \"text\": \"The consumer failed to establish that the defect was manufacturing-related and not caused by mishandling, improper use, or exposure to environmental factors during or after delivery. The 4-day timeline alone does not conclusively prove manufacturing defect without expert analysis of usage patterns.\",\n      \"targets\": [\"F004\", \"F010\"],\n      \"legal_basis\": \"Sale of Goods Act 1930 Section 16 - burden of proof on claimant to establish defect existed at time of delivery\"\n    },\n    {\n      \"objection_id\": \"O002\",\n      \"text\": \"The seller's return/replacement policy terms are not adequately established on record. The consumer has merely alleged such a policy exists without producing the complete policy document, purchase terms and conditions, or website screenshots contemporaneously dated to the purchase.\",\n      \"targets\": [\"F007\", \"I006\"],\n      \"legal_basis\": \"Contract interpretation requires production of original policy documents; oral or assumed terms are not enforceable\"\n    },\n    {\n      \"objection_id\": \"O003\",\n      \"text\": \"Repair by an authorized service centre is a reasonable and proportionate remedy for manufacturing defects under CPA 2019 Section 39. Replacement is not automatically mandated and the seller's offer to repair does not constitute unfair trade practice where repair can restore functionality.\",\n      \"targets\": [\"F008\", \"I002\"],\n      \"legal_basis\": \"CPA 2019 Section 39 provides District Commission discretion to grant replacement OR repair; replacement is not mandatory for all defects\"\n    },\n    {\n      \"objection_id\": \"O004\",\n      \"text\": \"The authorized service centre's diagnosis may be incomplete or incorrect. A single job sheet lacks independent verification and does not exclude alternative causes such as software malfunction, driver issues, power supply problems, or thermal management failures that do not constitute manufacturing defects.\",\n      \"targets\": [\"F005\", \"F006\"],\n      \"legal_basis\": \"Medical jurisprudence principle applies to technical defects - single opinion without peer review or second examination is insufficient proof\"\n    },\n    {\n      \"objection_id\": \"O005\",\n      \"text\": \"The consumer has not demonstrated that the defect manifested during normal use as per manufacturer specifications. Gaming laptops require specific operating conditions; the consumer may have subjected the laptop to intensive gaming, overclocking, or thermal stress immediately upon receipt, causing failure.\",\n      \"targets\": [\"F009\", \"F010\"],\n      \"legal_basis\": \"Implied warranty of merchantability applies to goods used according to normal purpose and manufacturer guidelines; abnormal stress voids warranty\"\n    },\n    {\n      \"objection_id\": \"O006\",\n      \"text\": \"The consumer's claim that repair causes 'loss of use' is speculative and self-inflicted. The consumer chose not to utilize repair services offered by the authorized centre. Refusing a remedy does not generate entitlement to additional compensation.\",\n      \"targets\": [\"I005\"],\n      \"legal_basis\": \"CPA 2019 jurisprudence requires consumers to mitigate damages; unreasonable refusal of available remedies bars compensation claims\"\n    },\n    {\n      \"objection_id\": \"O007\",\n      \"text\": \"No evidence establishes that the consumer suffered mental harassment beyond normal inconvenience of product defect. Mere frustration with the remedy offered does not meet the legal threshold for compensatory damages under Section 39 CPA 2019, which requires gross negligence or recklessness.\",\n      \"targets\": [\"I005\"],\n      \"legal_basis\": \"CPA 2019 Section 39(1)(g) requires demonstration of gross negligence or recklessness; ordinary commercial dispute does not qualify\"\n    },\n    {\n      \"objection_id\": \"O008\",\n      \"text\": \"The consumer's claim of breach of contract through misrepresentation of return policy is premature. The consumer has not exhausted the repair remedy offered and cannot claim breach until repair has been attempted and failed. Refusal to accept reasonable remedy prejudices the seller's defense.\",\n      \"targets\": [\"F008\", \"I003\"],\n      \"legal_basis\": \"Contract law principle - party alleging breach must demonstrate failure of essential obligation; alternative remedies must be exhausted\"\n    },\n    {\n      \"objection_id\": \"O009\",\n      \"text\": \"The service job sheet dated 7 August 2026 does not confirm when the diagnosis occurred or whether the diagnosis occurred after the consumer may have opened the device, run incompatible software, or caused internal damage through improper handling.\",\n      \"targets\": [\"F006\"],\n      \"legal_basis\": \"Chain of custody and contemporaneous documentation required; job sheet alone insufficient without testimony on examination procedures\"\n    },\n    {\n      \"objection_id\": \"O010\",\n      \"text\": \"The consumer's claim relies on presumption of manufacturing defect based solely on timing, but CPA 2019 does not establish automatic presumption for defects within 4 days. Presumption must be rebutted by seller only after consumer establishes prima facie case through technical evidence.\",\n      \"targets\": [\"I004\"],\n      \"legal_basis\": \"Burden of proof and presumptions under Indian Evidence Act 1872; timing alone insufficient for prima facie case\"\n    },\n    {\n      \"objection_id\": \"O011\",\n      \"text\": \"The seller did not violate Section 2(47) CPA 2019 (unfair/deceptive practice) by offering repair instead of replacement. Both are recognized remedies under Section 39, and offering the legally available remedy of repair does not constitute deception or misrepresentation.\",\n      \"targets\": [\"I003\"],\n      \"legal_basis\": \"CPA 2019 Section 2(47) requires deception or untruth; offering statutory remedy within seller's discretion is not deceptive\"\n    },\n    {\n      \"objection_id\": \"O012\",\n      \"text\": \"The consumer purchased a gaming laptop, which by definition involves high-performance components that may be subject to thermal stress and component sensitivity. The consumer bears responsibility for ensuring the device is used within manufacturer specifications immediately upon receipt.\",\n      \"targets\": [\"F001\", \"F009\"],\n      \"legal_basis\": \"Implied warranty of merchantability does not cover defects arising from misuse or failure to follow manufacturer usage guidelines\"\n    },\n    {\n      \"objection_id\": \"O013\",\n      \"text\": \"The consumer's claim assumes the return policy mandates replacement, but typical e-commerce policies provide repair as the primary remedy with replacement only after repair failure. The consumer has not provided the actual policy terms to prove otherwise.\",\n      \"targets\": [\"I006\"],\n      \"legal_basis\": \"Standard commercial practice and implied terms in e-commerce transactions allow repair as primary remedy\"\n    },\n    {\n      \"objection_id\": \"O014\",\n      \"text\": \"The consumer may have failed to provide proper care, storage, or protection during the critical 3-7 August 2026 window. Humidity, temperature exposure, power surges, or accidental drops during this period could cause motherboard failure without constituting manufacturing defect.\",\n      \"targets\": [\"F003\", \"F004\", \"F010\"],\n      \"legal_basis\": \"Warranty claims exclude defects arising from environmental exposure or failure to maintain product in reasonable condition\"\n    },\n    {\n      \"objection_id\": \"O015\",\n      \"text\": \"The consumer has not established financial loss or quantifiable damages beyond the price paid. Compensation for mental harassment requires extraordinary circumstances (gross negligence, intentional misconduct); ordinary commercial breach does not qualify.\",\n      \"targets\": [\"I005\"],\n      \"legal_basis\": \"Damages require quantifiable loss; distress claims require exceptional circumstances under tort law principles\"\n    },\n    {\n      \"objection_id\": \"O016\",\n      \"text\": \"The seller's jurisdiction defense: If the laptop was delivered through a logistics partner to an address controlled by the consumer, and the consumer resides in a different state than the seller's registered office, territorial jurisdiction may lie with seller's location, not consumer's location.\",\n      \"targets\": [\"I003\"],\n      \"legal_basis\": \"CPA 2019 Section 60 - jurisdiction determined by where cause of action arises; for online sales, dispute regarding proper forum is legitimate\"\n    },\n    {\n      \"objection_id\": \"O017\",\n      \"text\": \"The consumer's diligence claim (immediate reporting) is self-serving and expected behavior. Prompt reporting does not prove manufacturing defect and actually provides no independent value given the defect timing could result from multiple causes within the 4-day period.\",\n      \"targets\": [\"F010\"],\n      \"legal_basis\": \"Prompt reporting is standard practice and does not constitute independent evidence of manufacturing defect\"\n    },\n    {\n      \"objection_id\": \"O018\",\n      \"text\": \"The consumer cannot simultaneously claim the product was defective from manufacture while also asserting it was suitable for personal gaming use. If the device shut down repeatedly, the defect would be obvious and inspectable before or immediately upon purchase, suggesting consumer acceptance.\",\n      \"targets\": [\"F002\", \"F009\"],\n      \"legal_basis\": \"Doctrine of acceptance: consumer receiving and retaining defective goods without immediate protest may be deemed to have accepted the goods\"\n    },\n    {\n      \"objection_id\": \"O019\",\n      \"text\": \"Section 39 CPA 2019 grants District Commission authority to grant replacement, but this is discretionary ('may grant'), not mandatory. The Commission must consider proportionality, cost, and availability of repair as alternatives before ordering replacement.\",\n      \"targets\": [\"I002\"],\n      \"legal_basis\": \"CPA 2019 Section 39(1) uses permissive language ('may grant'); judicial discretion required\"\n    },\n    {\n      \"objection_id\": \"O020\",\n      \"text\": \"The consumer's argument that replacement is 'more appropriate' is subjective preference, not legal entitlement. High value of goods does not automatically mandate replacement remedy; proportionality and availability of repair must be considered.\",\n      \"targets\": [\"I002\"],\n      \"legal_basis\": \"Equitable remedy principles require least onerous remedy that addresses defect; replacement not automatic for expensive goods\"\n    }\n  ]\n}",
+        "parsed": {
+          "objections": [
+            {
+              "objection_id": "O001",
+              "text": "The consumer failed to establish that the defect was manufacturing-related and not caused by mishandling, improper use, or exposure to environmental factors during or after delivery. The 4-day timeline alone does not conclusively prove manufacturing defect without expert analysis of usage patterns.",
+              "targets": [
+                "F004",
+                "F010"
+              ],
+              "legal_basis": "Sale of Goods Act 1930 Section 16 - burden of proof on claimant to establish defect existed at time of delivery"
+            },
+            {
+              "objection_id": "O002",
+              "text": "The seller's return/replacement policy terms are not adequately established on record. The consumer has merely alleged such a policy exists without producing the complete policy document, purchase terms and conditions, or website screenshots contemporaneously dated to the purchase.",
+              "targets": [
+                "F007",
+                "I006"
+              ],
+              "legal_basis": "Contract interpretation requires production of original policy documents; oral or assumed terms are not enforceable"
+            },
+            {
+              "objection_id": "O003",
+              "text": "Repair by an authorized service centre is a reasonable and proportionate remedy for manufacturing defects under CPA 2019 Section 39. Replacement is not automatically mandated and the seller's offer to repair does not constitute unfair trade practice where repair can restore functionality.",
+              "targets": [
+                "F008",
+                "I002"
+              ],
+              "legal_basis": "CPA 2019 Section 39 provides District Commission discretion to grant replacement OR repair; replacement is not mandatory for all defects"
+            },
+            {
+              "objection_id": "O004",
+              "text": "The authorized service centre's diagnosis may be incomplete or incorrect. A single job sheet lacks independent verification and does not exclude alternative causes such as software malfunction, driver issues, power supply problems, or thermal management failures that do not constitute manufacturing defects.",
+              "targets": [
+                "F005",
+                "F006"
+              ],
+              "legal_basis": "Medical jurisprudence principle applies to technical defects - single opinion without peer review or second examination is insufficient proof"
+            },
+            {
+              "objection_id": "O005",
+              "text": "The consumer has not demonstrated that the defect manifested during normal use as per manufacturer specifications. Gaming laptops require specific operating conditions; the consumer may have subjected the laptop to intensive gaming, overclocking, or thermal stress immediately upon receipt, causing failure.",
+              "targets": [
+                "F009",
+                "F010"
+              ],
+              "legal_basis": "Implied warranty of merchantability applies to goods used according to normal purpose and manufacturer guidelines; abnormal stress voids warranty"
+            },
+            {
+              "objection_id": "O006",
+              "text": "The consumer's claim that repair causes 'loss of use' is speculative and self-inflicted. The consumer chose not to utilize repair services offered by the authorized centre. Refusing a remedy does not generate entitlement to additional compensation.",
+              "targets": [
+                "I005"
+              ],
+              "legal_basis": "CPA 2019 jurisprudence requires consumers to mitigate damages; unreasonable refusal of available remedies bars compensation claims"
+            },
+            {
+              "objection_id": "O007",
+              "text": "No evidence establishes that the consumer suffered mental harassment beyond normal inconvenience of product defect. Mere frustration with the remedy offered does not meet the legal threshold for compensatory damages under Section 39 CPA 2019, which requires gross negligence or recklessness.",
+              "targets": [
+                "I005"
+              ],
+              "legal_basis": "CPA 2019 Section 39(1)(g) requires demonstration of gross negligence or recklessness; ordinary commercial dispute does not qualify"
+            },
+            {
+              "objection_id": "O008",
+              "text": "The consumer's claim of breach of contract through misrepresentation of return policy is premature. The consumer has not exhausted the repair remedy offered and cannot claim breach until repair has been attempted and failed. Refusal to accept reasonable remedy prejudices the seller's defense.",
+              "targets": [
+                "F008",
+                "I003"
+              ],
+              "legal_basis": "Contract law principle - party alleging breach must demonstrate failure of essential obligation; alternative remedies must be exhausted"
+            },
+            {
+              "objection_id": "O009",
+              "text": "The service job sheet dated 7 August 2026 does not confirm when the diagnosis occurred or whether the diagnosis occurred after the consumer may have opened the device, run incompatible software, or caused internal damage through improper handling.",
+              "targets": [
+                "F006"
+              ],
+              "legal_basis": "Chain of custody and contemporaneous documentation required; job sheet alone insufficient without testimony on examination procedures"
+            },
+            {
+              "objection_id": "O010",
+              "text": "The consumer's claim relies on presumption of manufacturing defect based solely on timing, but CPA 2019 does not establish automatic presumption for defects within 4 days. Presumption must be rebutted by seller only after consumer establishes prima facie case through technical evidence.",
+              "targets": [
+                "I004"
+              ],
+              "legal_basis": "Burden of proof and presumptions under Indian Evidence Act 1872; timing alone insufficient for prima facie case"
+            },
+            {
+              "objection_id": "O011",
+              "text": "The seller did not violate Section 2(47) CPA 2019 (unfair/deceptive practice) by offering repair instead of replacement. Both are recognized remedies under Section 39, and offering the legally available remedy of repair does not constitute deception or misrepresentation.",
+              "targets": [
+                "I003"
+              ],
+              "legal_basis": "CPA 2019 Section 2(47) requires deception or untruth; offering statutory remedy within seller's discretion is not deceptive"
+            },
+            {
+              "objection_id": "O012",
+              "text": "The consumer purchased a gaming laptop, which by definition involves high-performance components that may be subject to thermal stress and component sensitivity. The consumer bears responsibility for ensuring the device is used within manufacturer specifications immediately upon receipt.",
+              "targets": [
+                "F001",
+                "F009"
+              ],
+              "legal_basis": "Implied warranty of merchantability does not cover defects arising from misuse or failure to follow manufacturer usage guidelines"
+            },
+            {
+              "objection_id": "O013",
+              "text": "The consumer's claim assumes the return policy mandates replacement, but typical e-commerce policies provide repair as the primary remedy with replacement only after repair failure. The consumer has not provided the actual policy terms to prove otherwise.",
+              "targets": [
+                "I006"
+              ],
+              "legal_basis": "Standard commercial practice and implied terms in e-commerce transactions allow repair as primary remedy"
+            },
+            {
+              "objection_id": "O014",
+              "text": "The consumer may have failed to provide proper care, storage, or protection during the critical 3-7 August 2026 window. Humidity, temperature exposure, power surges, or accidental drops during this period could cause motherboard failure without constituting manufacturing defect.",
+              "targets": [
+                "F003",
+                "F004",
+                "F010"
+              ],
+              "legal_basis": "Warranty claims exclude defects arising from environmental exposure or failure to maintain product in reasonable condition"
+            },
+            {
+              "objection_id": "O015",
+              "text": "The consumer has not established financial loss or quantifiable damages beyond the price paid. Compensation for mental harassment requires extraordinary circumstances (gross negligence, intentional misconduct); ordinary commercial breach does not qualify.",
+              "targets": [
+                "I005"
+              ],
+              "legal_basis": "Damages require quantifiable loss; distress claims require exceptional circumstances under tort law principles"
+            },
+            {
+              "objection_id": "O016",
+              "text": "The seller's jurisdiction defense: If the laptop was delivered through a logistics partner to an address controlled by the consumer, and the consumer resides in a different state than the seller's registered office, territorial jurisdiction may lie with seller's location, not consumer's location.",
+              "targets": [
+                "I003"
+              ],
+              "legal_basis": "CPA 2019 Section 60 - jurisdiction determined by where cause of action arises; for online sales, dispute regarding proper forum is legitimate"
+            },
+            {
+              "objection_id": "O017",
+              "text": "The consumer's diligence claim (immediate reporting) is self-serving and expected behavior. Prompt reporting does not prove manufacturing defect and actually provides no independent value given the defect timing could result from multiple causes within the 4-day period.",
+              "targets": [
+                "F010"
+              ],
+              "legal_basis": "Prompt reporting is standard practice and does not constitute independent evidence of manufacturing defect"
+            },
+            {
+              "objection_id": "O018",
+              "text": "The consumer cannot simultaneously claim the product was defective from manufacture while also asserting it was suitable for personal gaming use. If the device shut down repeatedly, the defect would be obvious and inspectable before or immediately upon purchase, suggesting consumer acceptance.",
+              "targets": [
+                "F002",
+                "F009"
+              ],
+              "legal_basis": "Doctrine of acceptance: consumer receiving and retaining defective goods without immediate protest may be deemed to have accepted the goods"
+            },
+            {
+              "objection_id": "O019",
+              "text": "Section 39 CPA 2019 grants District Commission authority to grant replacement, but this is discretionary ('may grant'), not mandatory. The Commission must consider proportionality, cost, and availability of repair as alternatives before ordering replacement.",
+              "targets": [
+                "I002"
+              ],
+              "legal_basis": "CPA 2019 Section 39(1) uses permissive language ('may grant'); judicial discretion required"
+            },
+            {
+              "objection_id": "O020",
+              "text": "The consumer's argument that replacement is 'more appropriate' is subjective preference, not legal entitlement. High value of goods does not automatically mandate replacement remedy; proportionality and availability of repair must be considered.",
+              "targets": [
+                "I002"
+              ],
+              "legal_basis": "Equitable remedy principles require least onerous remedy that addresses defect; replacement not automatic for expensive goods"
+            }
+          ]
+        },
+        "error": null,
+        "input_tokens": 1317,
+        "output_tokens": 2412
+      },
+      "attempt_2": null,
+      "final_status": "PASSED_FIRST_TIME"
+    },
+    {
+      "stage": "evidence_challenger",
+      "prompt_sent": "Analyze evidentiary weaknesses, potential attacks from the opponent, and any needed missing documents.\n\nEXTRACTED FACTS:\n- [F001] Gaming laptop purchased online for Rs. 78,999\n- [F002] Purchase date: 1 August 2026\n- [F003] Delivery date: 3 August 2026\n- [F004] Laptop began shutting down repeatedly starting 7 August 2026\n- [F005] Authorized service centre diagnosed motherboard fault\n- [F006] Service job sheet dated 7 August 2026\n- [F007] Consumer requested full replacement from seller citing return policy for manufacturing defects\n- [F008] Seller refused replacement and offered only repair\n- [F009] Laptop purchased for personal use\n- [F010] Defect occurred within 4 days of delivery\n\nUPLOADED EVIDENCE:\n- [E001] purchase_invoice.pdf: Purchase invoice for gaming laptop Rs. 78,999 delivered 3 Aug 2026\n- [E002] service_jobsheet.pdf: Authorized service centre job sheet showing motherboard fault dated 7 Aug 2026\n- [E003] seller_refusal_email.pdf: Email correspondence where seller refused replacement and offered only repair\n\nOPPONENT OBJECTIONS:\n- [O001] The consumer failed to establish that the defect was manufacturing-related and not caused by mishandling, improper use, or exposure to environmental factors during or after delivery. The 4-day timeline alone does not conclusively prove manufacturing defect without expert analysis of usage patterns.\n- [O002] The seller's return/replacement policy terms are not adequately established on record. The consumer has merely alleged such a policy exists without producing the complete policy document, purchase terms and conditions, or website screenshots contemporaneously dated to the purchase.\n- [O003] Repair by an authorized service centre is a reasonable and proportionate remedy for manufacturing defects under CPA 2019 Section 39. Replacement is not automatically mandated and the seller's offer to repair does not constitute unfair trade practice where repair can restore functionality.\n- [O004] The authorized service centre's diagnosis may be incomplete or incorrect. A single job sheet lacks independent verification and does not exclude alternative causes such as software malfunction, driver issues, power supply problems, or thermal management failures that do not constitute manufacturing defects.\n- [O005] The consumer has not demonstrated that the defect manifested during normal use as per manufacturer specifications. Gaming laptops require specific operating conditions; the consumer may have subjected the laptop to intensive gaming, overclocking, or thermal stress immediately upon receipt, causing failure.\n- [O006] The consumer's claim that repair causes 'loss of use' is speculative and self-inflicted. The consumer chose not to utilize repair services offered by the authorized centre. Refusing a remedy does not generate entitlement to additional compensation.\n- [O007] No evidence establishes that the consumer suffered mental harassment beyond normal inconvenience of product defect. Mere frustration with the remedy offered does not meet the legal threshold for compensatory damages under Section 39 CPA 2019, which requires gross negligence or recklessness.\n- [O008] The consumer's claim of breach of contract through misrepresentation of return policy is premature. The consumer has not exhausted the repair remedy offered and cannot claim breach until repair has been attempted and failed. Refusal to accept reasonable remedy prejudices the seller's defense.\n- [O009] The service job sheet dated 7 August 2026 does not confirm when the diagnosis occurred or whether the diagnosis occurred after the consumer may have opened the device, run incompatible software, or caused internal damage through improper handling.\n- [O010] The consumer's claim relies on presumption of manufacturing defect based solely on timing, but CPA 2019 does not establish automatic presumption for defects within 4 days. Presumption must be rebutted by seller only after consumer establishes prima facie case through technical evidence.\n- [O011] The seller did not violate Section 2(47) CPA 2019 (unfair/deceptive practice) by offering repair instead of replacement. Both are recognized remedies under Section 39, and offering the legally available remedy of repair does not constitute deception or misrepresentation.\n- [O012] The consumer purchased a gaming laptop, which by definition involves high-performance components that may be subject to thermal stress and component sensitivity. The consumer bears responsibility for ensuring the device is used within manufacturer specifications immediately upon receipt.\n- [O013] The consumer's claim assumes the return policy mandates replacement, but typical e-commerce policies provide repair as the primary remedy with replacement only after repair failure. The consumer has not provided the actual policy terms to prove otherwise.\n- [O014] The consumer may have failed to provide proper care, storage, or protection during the critical 3-7 August 2026 window. Humidity, temperature exposure, power surges, or accidental drops during this period could cause motherboard failure without constituting manufacturing defect.\n- [O015] The consumer has not established financial loss or quantifiable damages beyond the price paid. Compensation for mental harassment requires extraordinary circumstances (gross negligence, intentional misconduct); ordinary commercial breach does not qualify.\n- [O016] The seller's jurisdiction defense: If the laptop was delivered through a logistics partner to an address controlled by the consumer, and the consumer resides in a different state than the seller's registered office, territorial jurisdiction may lie with seller's location, not consumer's location.\n- [O017] The consumer's diligence claim (immediate reporting) is self-serving and expected behavior. Prompt reporting does not prove manufacturing defect and actually provides no independent value given the defect timing could result from multiple causes within the 4-day period.\n- [O018] The consumer cannot simultaneously claim the product was defective from manufacture while also asserting it was suitable for personal gaming use. If the device shut down repeatedly, the defect would be obvious and inspectable before or immediately upon purchase, suggesting consumer acceptance.\n- [O019] Section 39 CPA 2019 grants District Commission authority to grant replacement, but this is discretionary ('may grant'), not mandatory. The Commission must consider proportionality, cost, and availability of repair as alternatives before ordering replacement.\n- [O020] The consumer's argument that replacement is 'more appropriate' is subjective preference, not legal entitlement. High value of goods does not automatically mandate replacement remedy; proportionality and availability of repair must be considered.\n\nSchema and format instructions:\nReturn only JSON with no prose or markdown fences: {\"attacks\":[\"string\"],\"document_requests\":[{\"request_id\":\"DR001\",\"description\":\"string\",\"affected_stages\":[\"EVIDENCE_ISSUE_MAPPING\"],\"resolved\":false}]}.",
+      "expected_schema": {
+        "$defs": {
+          "DocumentRequest": {
+            "properties": {
+              "request_id": {
+                "title": "Request Id",
+                "type": "string"
+              },
+              "description": {
+                "title": "Description",
+                "type": "string"
+              },
+              "affected_stages": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Affected Stages",
+                "type": "array"
+              },
+              "resolved": {
+                "default": false,
+                "title": "Resolved",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "request_id",
+              "description",
+              "affected_stages"
+            ],
+            "title": "DocumentRequest",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "attacks": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Attacks",
+            "type": "array"
+          },
+          "document_requests": {
+            "default": [],
+            "items": {
+              "$ref": "#/$defs/DocumentRequest"
+            },
+            "title": "Document Requests",
+            "type": "array"
+          }
+        },
+        "required": [
+          "attacks"
+        ],
+        "title": "ChallengerOutput",
+        "type": "object"
+      },
+      "attempt_1": {
+        "raw": "```json\n{\n  \"attacks\": [\n    \"Manufacturing defect not proven: Opponent argues 4-day timeline insufficient without expert analysis excluding mishandling, improper use, environmental exposure, software malfunction, driver issues, power supply problems, or thermal management failures\",\n    \"Return policy not established: Complete policy document, terms and conditions, and contemporaneously dated website screenshots absent; consumer merely alleged policy existence\",\n    \"Repair is adequate remedy: CPA 2019 Section 39 permits repair as proportionate remedy; replacement not automatically mandated; seller's repair offer does not constitute unfair trade practice\",\n    \"Service diagnosis incomplete: Single job sheet lacks independent verification; alternative technical causes not excluded by authorized service centre\",\n    \"Gaming laptop usage responsibility: Consumer may have subjected device to intensive gaming, overclocking, or thermal stress immediately upon receipt; consumer bears responsibility for manufacturer specification compliance\",\n    \"Loss of use self-inflicted: Consumer chose not to utilize repair services; refusing offered remedy does not generate entitlement to additional compensation\",\n    \"Mental harassment not established: Mere frustration with remedy offered does not meet legal threshold requiring gross negligence or recklessness under Section 39 CPA 2019\",\n    \"Premature breach claim: Consumer has not exhausted repair remedy offered; cannot claim breach until repair attempted and failed; refusal prejudices seller's defense\",\n    \"Job sheet timing ambiguous: Document does not confirm diagnosis timing or whether diagnosis occurred after consumer opened device, ran incompatible software, or caused internal damage\",\n    \"No automatic presumption: CPA 2019 does not establish automatic presumption for defects within 4 days; consumer must establish prima facie case through technical evidence\",\n    \"Section 2(47) violation not established: Offering repair instead of replacement does not violate unfair/deceptive practice provision; both remedies recognized under Section 39\",\n    \"Gaming laptop high-performance risk: High-performance components subject to thermal stress and sensitivity; consumer responsibility for use within specifications immediately upon receipt\",\n    \"Typical policy hierarchy: Standard e-commerce policies provide repair as primary remedy with replacement only after repair failure; consumer has not proven policy mandates replacement\",\n    \"Improper care during critical window: Humidity, temperature exposure, power surges, or accidental drops during 3-7 August 2026 could cause motherboard failure without manufacturing defect\",\n    \"Damages not quantified: Consumer has not established financial loss beyond price paid; mental harassment compensation requires extraordinary circumstances\",\n    \"Territorial jurisdiction challenge: If delivery through logistics partner to consumer's address and consumer in different state than seller's registered office, jurisdiction may lie with seller's location\",\n    \"Diligence claim self-serving: Prompt reporting is expected behavior; provides no independent value as defect timing could result from multiple causes within 4-day period\",\n    \"Contradictory claims on suitability: Consumer cannot simultaneously claim product defective from manufacture while asserting it suitable for personal gaming use; obvious defect would be inspectable before purchase suggesting acceptance\",\n    \"Discretionary remedial authority: Section 39 CPA 2019 grants District Commission discretionary authority ('may grant') replacement; must consider proportionality, cost, and repair availability\",\n    \"Replacement preference not entitlement: Consumer's argument that replacement more appropriate is subjective preference not legal entitlement; high value does not mandate replacement; proportionality and repair availability must be considered\"\n  ],\n  \"document_requests\": [\n    {\n      \"request_id\": \"DR001\",\n      \"description\": \"Complete seller's return/replacement/warranty policy as displayed on website on date of purchase (1 August 2026) with screenshot evidence showing policy terms mandating replacement for manufacturing defects within specified period\",\n      \"affected_stages\": [\n        \"EVIDENCE_ISSUE_MAPPING\",\n        \"LEGAL_BASIS\"\n      ],\n      \"resolved\": false\n    },\n    {\n      \"request_id\": \"DR002\",\n      \"description\": \"Independent technical expert report from neutral third-party (not authorized service centre) examining motherboard to definitively establish manufacturing defect and exclude alternative causes including mishandling, environmental exposure, software malfunction, driver issues, power supply problems, overclocking, thermal stress, or improper usage\",\n      \"affected_stages\": [\n        \"EVIDENCE_ISSUE_MAPPING\",\n        \"TECHNICAL_PROOF\"\n      ],\n      \"resolved\": false\n    },\n    {\n      \"request_id\": \"DR003\",\n      \"description\": \"Manufacturer's specifications and operating condition requirements for the specific gaming laptop model; evidence that consumer used device within these specifications during 3-7 August 2026 period\",\n      \"affected_stages\": [\n        \"EVIDENCE_ISSUE_MAPPING\",\n        \"USER_CONDUCT\"\n      ],\n      \"resolved\": false\n    },\n    {\n      \"request_id\": \"DR004\",\n      \"description\": \"Detailed timeline and photographic/video evidence of laptop condition from purchase through delivery to first shutdown incident (1-7 August 2026); packaging condition, visible damage inspection results, initial power-on tests\",\n      \"affected_stages\": [\n        \"EVIDENCE_ISSUE_MAPPING\",\n        \"DEFECT_CAUSATION\"\n      ],\n      \"resolved\": false\n    },\n    {\n      \"request_id\": \"DR005\",\n      \"description\": \"Authorized service centre's complete diagnostic report with detailed technical findings, component-level analysis, and explicit statement confirming manufacturing defect versus other causes (software, power, thermal); date and time of actual diagnosis\",\n      \"affected_stages\": [\n        \"EVIDENCE_ISSUE_MAPPING\",\n        \"SERVICE_REPORT\"\n      ],\n      \"resolved\": false\n    },\n    {\n      \"request_id\": \"DR006\",\n      \"description\": \"Documentary evidence of environmental conditions (humidity, temperature, power stability) at consumer's location during 3-7 August 2026; utility records, weather data, or photographs establishing proper storage conditions\",\n      \"affected_stages\": [\n        \"EVIDENCE_ISSUE_MAPPING\",\n        \"ENVIRONMENTAL_FACTORS\"\n      ],\n      \"resolved\": false\n    },\n    {\n      \"request_id\": \"DR007\",\n      \"description\": \"Seller's standard repair turnaround time and consumer's evidence of quantifiable financial loss or business impact caused by repair period; demonstration that repair remedy is unreasonable or disproportionate given repair duration\",\n      \"affected_stages\": [\n        \"EVIDENCE_ISSUE_MAPPING\",\n        \"REMEDY_PROPORTIONALITY\"\n      ],\n      \"resolved\": false\n    },\n    {\n      \"request_id\": \"DR008\",\n      \"description\": \"Documented evidence of actual mental harassment, psychological injury, or extraordinary suffering beyond normal commercial inconvenience; medical reports, contemporaneous communications, or third-party corroboration of claimed harassment\",\n      \"affected_stages\": [\n        \"EVIDENCE_ISSUE_MAPPING\",\n        \"DAMAGES_CLAIM\"\n      ],\n      \"resolved\": false\n    },\n    {\n      \"request_id\": \"DR009\",\n      \"description\": \"Proof of consumer's jurisdiction/domicile and seller's registered office location to establish proper territorial jurisdiction; address proof and business registration documents\",\n      \"affected_stages\": [\n        \"EVIDENCE_ISSUE_MAPPING\",\n        \"JURISDICTION\"\n      ],\n      \"resolved\": false\n    },\n    {\n      \"request_id\": \"DR010\",\n      \"description\": \"Contemporaneous written communications between consumer and authorized service centre prior to 7 August 2026 requesting repair; evidence of when consumer was first informed repair would be undertaken and estimated completion timeline\",\n      \"affected_stages\": [\n        \"EVIDENCE_ISSUE_MAPPING\",\n        \"CONSUMER_DILIGENCE\"\n      ],\n      \"resolved\": false\n    },\n    {\n      \"request_id\": \"DR011\",\n      \"description\": \"Consumer's purchase order, email confirmations, or account history showing actual terms and conditions accepted at time of purchase on 1 August 2026; proof of which specific policy version was binding\",\n      \"affected_stages\": [\n        \"EVIDENCE_ISSUE_MAPPING\",\n        \"CONTRACTUAL_TERMS\"\n      ],\n      \"resolved\": false\n    },\n    {\n      \"request_id\": \"DR012\",\n      \"description\": \"Log files, system diagnostics, BIOS/firmware reports, or device initialization records from laptop capturing system status and error codes between 3-7 August 2026 to exclude software or driver causation\",\n      \"affected_stages\": [\n        \"EVIDENCE_ISSUE_MAPPING\",\n        \"TECHNICAL_EVIDENCE\"\n      ],\n      \"resolved\": false\n    },\n    {\n      \"request_id\": \"DR013\",\n      \"description\": \"Seller's communications with authorized service centre regarding diagnosis methodology and standards; certification or accreditation of service centre's technical competence and diagnostic equipment\",\n      \"affected_stages\": [\n        \"EVIDENCE_ISSUE_MAPPING\",\n        \"SERVICE_CENTRE_AUTHORITY\"\n      ],\n      \"resolved\": false\n    },\n    {\n      \"request_id\": \"DR014\",\n      \"description\": \"Evidence of market availability of replacement gaming laptops of equivalent or similar specifications; cost comparison between repair and replacement; proportionality analysis supporting replacement feasibility\",\n      \"affected_stages\": [\n        \"EVIDENCE_ISSUE_MAPPING\",\n        \"REMEDY_AVAILABILITY\"\n      ],\n      \"resolved\": false\n    },\n    {\n      \"request_id\": \"DR015\",\n      \"description\": \"Unboxing photographs, video, or written inventory from delivery date (3 August 2026) showing no visible damage, proper packaging, and pristine condition upon receipt before first power-on\",\n      \"affected_stages\": [\n        \"EVIDENCE_ISSUE_MAPPING\",\n        \"DELIVERY_CONDITION\"\n      ],\n      \"resolved\": false\n    }\n  ]\n}\n```",
+        "cleaned": "{\n  \"attacks\": [\n    \"Manufacturing defect not proven: Opponent argues 4-day timeline insufficient without expert analysis excluding mishandling, improper use, environmental exposure, software malfunction, driver issues, power supply problems, or thermal management failures\",\n    \"Return policy not established: Complete policy document, terms and conditions, and contemporaneously dated website screenshots absent; consumer merely alleged policy existence\",\n    \"Repair is adequate remedy: CPA 2019 Section 39 permits repair as proportionate remedy; replacement not automatically mandated; seller's repair offer does not constitute unfair trade practice\",\n    \"Service diagnosis incomplete: Single job sheet lacks independent verification; alternative technical causes not excluded by authorized service centre\",\n    \"Gaming laptop usage responsibility: Consumer may have subjected device to intensive gaming, overclocking, or thermal stress immediately upon receipt; consumer bears responsibility for manufacturer specification compliance\",\n    \"Loss of use self-inflicted: Consumer chose not to utilize repair services; refusing offered remedy does not generate entitlement to additional compensation\",\n    \"Mental harassment not established: Mere frustration with remedy offered does not meet legal threshold requiring gross negligence or recklessness under Section 39 CPA 2019\",\n    \"Premature breach claim: Consumer has not exhausted repair remedy offered; cannot claim breach until repair attempted and failed; refusal prejudices seller's defense\",\n    \"Job sheet timing ambiguous: Document does not confirm diagnosis timing or whether diagnosis occurred after consumer opened device, ran incompatible software, or caused internal damage\",\n    \"No automatic presumption: CPA 2019 does not establish automatic presumption for defects within 4 days; consumer must establish prima facie case through technical evidence\",\n    \"Section 2(47) violation not established: Offering repair instead of replacement does not violate unfair/deceptive practice provision; both remedies recognized under Section 39\",\n    \"Gaming laptop high-performance risk: High-performance components subject to thermal stress and sensitivity; consumer responsibility for use within specifications immediately upon receipt\",\n    \"Typical policy hierarchy: Standard e-commerce policies provide repair as primary remedy with replacement only after repair failure; consumer has not proven policy mandates replacement\",\n    \"Improper care during critical window: Humidity, temperature exposure, power surges, or accidental drops during 3-7 August 2026 could cause motherboard failure without manufacturing defect\",\n    \"Damages not quantified: Consumer has not established financial loss beyond price paid; mental harassment compensation requires extraordinary circumstances\",\n    \"Territorial jurisdiction challenge: If delivery through logistics partner to consumer's address and consumer in different state than seller's registered office, jurisdiction may lie with seller's location\",\n    \"Diligence claim self-serving: Prompt reporting is expected behavior; provides no independent value as defect timing could result from multiple causes within 4-day period\",\n    \"Contradictory claims on suitability: Consumer cannot simultaneously claim product defective from manufacture while asserting it suitable for personal gaming use; obvious defect would be inspectable before purchase suggesting acceptance\",\n    \"Discretionary remedial authority: Section 39 CPA 2019 grants District Commission discretionary authority ('may grant') replacement; must consider proportionality, cost, and repair availability\",\n    \"Replacement preference not entitlement: Consumer's argument that replacement more appropriate is subjective preference not legal entitlement; high value does not mandate replacement; proportionality and repair availability must be considered\"\n  ],\n  \"document_requests\": [\n    {\n      \"request_id\": \"DR001\",\n      \"description\": \"Complete seller's return/replacement/warranty policy as displayed on website on date of purchase (1 August 2026) with screenshot evidence showing policy terms mandating replacement for manufacturing defects within specified period\",\n      \"affected_stages\": [\n        \"EVIDENCE_ISSUE_MAPPING\",\n        \"LEGAL_BASIS\"\n      ],\n      \"resolved\": false\n    },\n    {\n      \"request_id\": \"DR002\",\n      \"description\": \"Independent technical expert report from neutral third-party (not authorized service centre) examining motherboard to definitively establish manufacturing defect and exclude alternative causes including mishandling, environmental exposure, software malfunction, driver issues, power supply problems, overclocking, thermal stress, or improper usage\",\n      \"affected_stages\": [\n        \"EVIDENCE_ISSUE_MAPPING\",\n        \"TECHNICAL_PROOF\"\n      ],\n      \"resolved\": false\n    },\n    {\n      \"request_id\": \"DR003\",\n      \"description\": \"Manufacturer's specifications and operating condition requirements for the specific gaming laptop model; evidence that consumer used device within these specifications during 3-7 August 2026 period\",\n      \"affected_stages\": [\n        \"EVIDENCE_ISSUE_MAPPING\",\n        \"USER_CONDUCT\"\n      ],\n      \"resolved\": false\n    },\n    {\n      \"request_id\": \"DR004\",\n      \"description\": \"Detailed timeline and photographic/video evidence of laptop condition from purchase through delivery to first shutdown incident (1-7 August 2026); packaging condition, visible damage inspection results, initial power-on tests\",\n      \"affected_stages\": [\n        \"EVIDENCE_ISSUE_MAPPING\",\n        \"DEFECT_CAUSATION\"\n      ],\n      \"resolved\": false\n    },\n    {\n      \"request_id\": \"DR005\",\n      \"description\": \"Authorized service centre's complete diagnostic report with detailed technical findings, component-level analysis, and explicit statement confirming manufacturing defect versus other causes (software, power, thermal); date and time of actual diagnosis\",\n      \"affected_stages\": [\n        \"EVIDENCE_ISSUE_MAPPING\",\n        \"SERVICE_REPORT\"\n      ],\n      \"resolved\": false\n    },\n    {\n      \"request_id\": \"DR006\",\n      \"description\": \"Documentary evidence of environmental conditions (humidity, temperature, power stability) at consumer's location during 3-7 August 2026; utility records, weather data, or photographs establishing proper storage conditions\",\n      \"affected_stages\": [\n        \"EVIDENCE_ISSUE_MAPPING\",\n        \"ENVIRONMENTAL_FACTORS\"\n      ],\n      \"resolved\": false\n    },\n    {\n      \"request_id\": \"DR007\",\n      \"description\": \"Seller's standard repair turnaround time and consumer's evidence of quantifiable financial loss or business impact caused by repair period; demonstration that repair remedy is unreasonable or disproportionate given repair duration\",\n      \"affected_stages\": [\n        \"EVIDENCE_ISSUE_MAPPING\",\n        \"REMEDY_PROPORTIONALITY\"\n      ],\n      \"resolved\": false\n    },\n    {\n      \"request_id\": \"DR008\",\n      \"description\": \"Documented evidence of actual mental harassment, psychological injury, or extraordinary suffering beyond normal commercial inconvenience; medical reports, contemporaneous communications, or third-party corroboration of claimed harassment\",\n      \"affected_stages\": [\n        \"EVIDENCE_ISSUE_MAPPING\",\n        \"DAMAGES_CLAIM\"\n      ],\n      \"resolved\": false\n    },\n    {\n      \"request_id\": \"DR009\",\n      \"description\": \"Proof of consumer's jurisdiction/domicile and seller's registered office location to establish proper territorial jurisdiction; address proof and business registration documents\",\n      \"affected_stages\": [\n        \"EVIDENCE_ISSUE_MAPPING\",\n        \"JURISDICTION\"\n      ],\n      \"resolved\": false\n    },\n    {\n      \"request_id\": \"DR010\",\n      \"description\": \"Contemporaneous written communications between consumer and authorized service centre prior to 7 August 2026 requesting repair; evidence of when consumer was first informed repair would be undertaken and estimated completion timeline\",\n      \"affected_stages\": [\n        \"EVIDENCE_ISSUE_MAPPING\",\n        \"CONSUMER_DILIGENCE\"\n      ],\n      \"resolved\": false\n    },\n    {\n      \"request_id\": \"DR011\",\n      \"description\": \"Consumer's purchase order, email confirmations, or account history showing actual terms and conditions accepted at time of purchase on 1 August 2026; proof of which specific policy version was binding\",\n      \"affected_stages\": [\n        \"EVIDENCE_ISSUE_MAPPING\",\n        \"CONTRACTUAL_TERMS\"\n      ],\n      \"resolved\": false\n    },\n    {\n      \"request_id\": \"DR012\",\n      \"description\": \"Log files, system diagnostics, BIOS/firmware reports, or device initialization records from laptop capturing system status and error codes between 3-7 August 2026 to exclude software or driver causation\",\n      \"affected_stages\": [\n        \"EVIDENCE_ISSUE_MAPPING\",\n        \"TECHNICAL_EVIDENCE\"\n      ],\n      \"resolved\": false\n    },\n    {\n      \"request_id\": \"DR013\",\n      \"description\": \"Seller's communications with authorized service centre regarding diagnosis methodology and standards; certification or accreditation of service centre's technical competence and diagnostic equipment\",\n      \"affected_stages\": [\n        \"EVIDENCE_ISSUE_MAPPING\",\n        \"SERVICE_CENTRE_AUTHORITY\"\n      ],\n      \"resolved\": false\n    },\n    {\n      \"request_id\": \"DR014\",\n      \"description\": \"Evidence of market availability of replacement gaming laptops of equivalent or similar specifications; cost comparison between repair and replacement; proportionality analysis supporting replacement feasibility\",\n      \"affected_stages\": [\n        \"EVIDENCE_ISSUE_MAPPING\",\n        \"REMEDY_AVAILABILITY\"\n      ],\n      \"resolved\": false\n    },\n    {\n      \"request_id\": \"DR015\",\n      \"description\": \"Unboxing photographs, video, or written inventory from delivery date (3 August 2026) showing no visible damage, proper packaging, and pristine condition upon receipt before first power-on\",\n      \"affected_stages\": [\n        \"EVIDENCE_ISSUE_MAPPING\",\n        \"DELIVERY_CONDITION\"\n      ],\n      \"resolved\": false\n    }\n  ]\n}",
+        "parsed": {
+          "attacks": [
+            "Manufacturing defect not proven: Opponent argues 4-day timeline insufficient without expert analysis excluding mishandling, improper use, environmental exposure, software malfunction, driver issues, power supply problems, or thermal management failures",
+            "Return policy not established: Complete policy document, terms and conditions, and contemporaneously dated website screenshots absent; consumer merely alleged policy existence",
+            "Repair is adequate remedy: CPA 2019 Section 39 permits repair as proportionate remedy; replacement not automatically mandated; seller's repair offer does not constitute unfair trade practice",
+            "Service diagnosis incomplete: Single job sheet lacks independent verification; alternative technical causes not excluded by authorized service centre",
+            "Gaming laptop usage responsibility: Consumer may have subjected device to intensive gaming, overclocking, or thermal stress immediately upon receipt; consumer bears responsibility for manufacturer specification compliance",
+            "Loss of use self-inflicted: Consumer chose not to utilize repair services; refusing offered remedy does not generate entitlement to additional compensation",
+            "Mental harassment not established: Mere frustration with remedy offered does not meet legal threshold requiring gross negligence or recklessness under Section 39 CPA 2019",
+            "Premature breach claim: Consumer has not exhausted repair remedy offered; cannot claim breach until repair attempted and failed; refusal prejudices seller's defense",
+            "Job sheet timing ambiguous: Document does not confirm diagnosis timing or whether diagnosis occurred after consumer opened device, ran incompatible software, or caused internal damage",
+            "No automatic presumption: CPA 2019 does not establish automatic presumption for defects within 4 days; consumer must establish prima facie case through technical evidence",
+            "Section 2(47) violation not established: Offering repair instead of replacement does not violate unfair/deceptive practice provision; both remedies recognized under Section 39",
+            "Gaming laptop high-performance risk: High-performance components subject to thermal stress and sensitivity; consumer responsibility for use within specifications immediately upon receipt",
+            "Typical policy hierarchy: Standard e-commerce policies provide repair as primary remedy with replacement only after repair failure; consumer has not proven policy mandates replacement",
+            "Improper care during critical window: Humidity, temperature exposure, power surges, or accidental drops during 3-7 August 2026 could cause motherboard failure without manufacturing defect",
+            "Damages not quantified: Consumer has not established financial loss beyond price paid; mental harassment compensation requires extraordinary circumstances",
+            "Territorial jurisdiction challenge: If delivery through logistics partner to consumer's address and consumer in different state than seller's registered office, jurisdiction may lie with seller's location",
+            "Diligence claim self-serving: Prompt reporting is expected behavior; provides no independent value as defect timing could result from multiple causes within 4-day period",
+            "Contradictory claims on suitability: Consumer cannot simultaneously claim product defective from manufacture while asserting it suitable for personal gaming use; obvious defect would be inspectable before purchase suggesting acceptance",
+            "Discretionary remedial authority: Section 39 CPA 2019 grants District Commission discretionary authority ('may grant') replacement; must consider proportionality, cost, and repair availability",
+            "Replacement preference not entitlement: Consumer's argument that replacement more appropriate is subjective preference not legal entitlement; high value does not mandate replacement; proportionality and repair availability must be considered"
+          ],
+          "document_requests": [
+            {
+              "request_id": "DR001",
+              "description": "Complete seller's return/replacement/warranty policy as displayed on website on date of purchase (1 August 2026) with screenshot evidence showing policy terms mandating replacement for manufacturing defects within specified period",
+              "affected_stages": [
+                "EVIDENCE_ISSUE_MAPPING",
+                "LEGAL_BASIS"
+              ],
+              "resolved": false
+            },
+            {
+              "request_id": "DR002",
+              "description": "Independent technical expert report from neutral third-party (not authorized service centre) examining motherboard to definitively establish manufacturing defect and exclude alternative causes including mishandling, environmental exposure, software malfunction, driver issues, power supply problems, overclocking, thermal stress, or improper usage",
+              "affected_stages": [
+                "EVIDENCE_ISSUE_MAPPING",
+                "TECHNICAL_PROOF"
+              ],
+              "resolved": false
+            },
+            {
+              "request_id": "DR003",
+              "description": "Manufacturer's specifications and operating condition requirements for the specific gaming laptop model; evidence that consumer used device within these specifications during 3-7 August 2026 period",
+              "affected_stages": [
+                "EVIDENCE_ISSUE_MAPPING",
+                "USER_CONDUCT"
+              ],
+              "resolved": false
+            },
+            {
+              "request_id": "DR004",
+              "description": "Detailed timeline and photographic/video evidence of laptop condition from purchase through delivery to first shutdown incident (1-7 August 2026); packaging condition, visible damage inspection results, initial power-on tests",
+              "affected_stages": [
+                "EVIDENCE_ISSUE_MAPPING",
+                "DEFECT_CAUSATION"
+              ],
+              "resolved": false
+            },
+            {
+              "request_id": "DR005",
+              "description": "Authorized service centre's complete diagnostic report with detailed technical findings, component-level analysis, and explicit statement confirming manufacturing defect versus other causes (software, power, thermal); date and time of actual diagnosis",
+              "affected_stages": [
+                "EVIDENCE_ISSUE_MAPPING",
+                "SERVICE_REPORT"
+              ],
+              "resolved": false
+            },
+            {
+              "request_id": "DR006",
+              "description": "Documentary evidence of environmental conditions (humidity, temperature, power stability) at consumer's location during 3-7 August 2026; utility records, weather data, or photographs establishing proper storage conditions",
+              "affected_stages": [
+                "EVIDENCE_ISSUE_MAPPING",
+                "ENVIRONMENTAL_FACTORS"
+              ],
+              "resolved": false
+            },
+            {
+              "request_id": "DR007",
+              "description": "Seller's standard repair turnaround time and consumer's evidence of quantifiable financial loss or business impact caused by repair period; demonstration that repair remedy is unreasonable or disproportionate given repair duration",
+              "affected_stages": [
+                "EVIDENCE_ISSUE_MAPPING",
+                "REMEDY_PROPORTIONALITY"
+              ],
+              "resolved": false
+            },
+            {
+              "request_id": "DR008",
+              "description": "Documented evidence of actual mental harassment, psychological injury, or extraordinary suffering beyond normal commercial inconvenience; medical reports, contemporaneous communications, or third-party corroboration of claimed harassment",
+              "affected_stages": [
+                "EVIDENCE_ISSUE_MAPPING",
+                "DAMAGES_CLAIM"
+              ],
+              "resolved": false
+            },
+            {
+              "request_id": "DR009",
+              "description": "Proof of consumer's jurisdiction/domicile and seller's registered office location to establish proper territorial jurisdiction; address proof and business registration documents",
+              "affected_stages": [
+                "EVIDENCE_ISSUE_MAPPING",
+                "JURISDICTION"
+              ],
+              "resolved": false
+            },
+            {
+              "request_id": "DR010",
+              "description": "Contemporaneous written communications between consumer and authorized service centre prior to 7 August 2026 requesting repair; evidence of when consumer was first informed repair would be undertaken and estimated completion timeline",
+              "affected_stages": [
+                "EVIDENCE_ISSUE_MAPPING",
+                "CONSUMER_DILIGENCE"
+              ],
+              "resolved": false
+            },
+            {
+              "request_id": "DR011",
+              "description": "Consumer's purchase order, email confirmations, or account history showing actual terms and conditions accepted at time of purchase on 1 August 2026; proof of which specific policy version was binding",
+              "affected_stages": [
+                "EVIDENCE_ISSUE_MAPPING",
+                "CONTRACTUAL_TERMS"
+              ],
+              "resolved": false
+            },
+            {
+              "request_id": "DR012",
+              "description": "Log files, system diagnostics, BIOS/firmware reports, or device initialization records from laptop capturing system status and error codes between 3-7 August 2026 to exclude software or driver causation",
+              "affected_stages": [
+                "EVIDENCE_ISSUE_MAPPING",
+                "TECHNICAL_EVIDENCE"
+              ],
+              "resolved": false
+            },
+            {
+              "request_id": "DR013",
+              "description": "Seller's communications with authorized service centre regarding diagnosis methodology and standards; certification or accreditation of service centre's technical competence and diagnostic equipment",
+              "affected_stages": [
+                "EVIDENCE_ISSUE_MAPPING",
+                "SERVICE_CENTRE_AUTHORITY"
+              ],
+              "resolved": false
+            },
+            {
+              "request_id": "DR014",
+              "description": "Evidence of market availability of replacement gaming laptops of equivalent or similar specifications; cost comparison between repair and replacement; proportionality analysis supporting replacement feasibility",
+              "affected_stages": [
+                "EVIDENCE_ISSUE_MAPPING",
+                "REMEDY_AVAILABILITY"
+              ],
+              "resolved": false
+            },
+            {
+              "request_id": "DR015",
+              "description": "Unboxing photographs, video, or written inventory from delivery date (3 August 2026) showing no visible damage, proper packaging, and pristine condition upon receipt before first power-on",
+              "affected_stages": [
+                "EVIDENCE_ISSUE_MAPPING",
+                "DELIVERY_CONDITION"
+              ],
+              "resolved": false
+            }
+          ]
+        },
+        "error": null,
+        "input_tokens": 1520,
+        "output_tokens": 2305
+      },
+      "attempt_2": null,
+      "final_status": "PASSED_FIRST_TIME"
+    }
+  ]
+}

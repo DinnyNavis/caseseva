@@ -1,0 +1,4 @@
+Classify the legal domain of the following Indian legal dispute (e.g., "Consumer", "Civil", "Criminal", "Labor", "Commercial", etc.).
+
+Return only JSON with no prose or markdown fences:
+{"domain":"string","sub_domain":"string","confidence":0.0,"reasoning":"string"}

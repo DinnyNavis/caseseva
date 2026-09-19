@@ -1,0 +1,14 @@
+node_modules/
+frontend/
+tests/
+.aws-sam/
+.localdev/
+.git/
+.venv/
+venv/
+env/
+artifacts/
+test-results/
+fixtures/
+*.pyc
+__pycache__/

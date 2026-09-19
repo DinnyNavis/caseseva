@@ -1,0 +1,1 @@
+Return only JSON with no prose or markdown fences: {"issues":[{"issue_id":"I001","question":"string","fact_ids":["F001"],"evidence_ids":["E001"],"status":"OPEN"}]}.

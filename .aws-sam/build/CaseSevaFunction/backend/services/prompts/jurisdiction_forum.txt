@@ -1,0 +1,1 @@
+Return only JSON with no prose or markdown fences: {"forum_family":"string","commission_level":"string","reasoning":"string","territorial_basis":"string","address_verification_required":false}.

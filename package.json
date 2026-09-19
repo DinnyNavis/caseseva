@@ -1,0 +1,15 @@
+{
+  "name": "caseseva-ai",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "install:all": "npm install --prefix frontend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev": "concurrently \"python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000\" \"npm run dev --prefix frontend\"",
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.50.1",
+    "concurrently": "^9.1.2"
+  }
+}

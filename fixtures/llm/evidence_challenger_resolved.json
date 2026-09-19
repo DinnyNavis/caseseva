@@ -1,0 +1,1 @@
+{"attacks":["The seller's dated communication is now available for review."],"document_requests":[{"request_id":"DR001","description":"Upload the seller's dated refusal or customer-support communication showing the replacement request and response.","affected_stages":["EVIDENCE_ISSUE_MAPPING","EVIDENCE_CHALLENGER","REBUTTAL","NEUTRAL_EVALUATION"],"resolved":true}]}

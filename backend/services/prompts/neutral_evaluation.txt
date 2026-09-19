@@ -1,0 +1,1 @@
+Return only JSON with no prose or markdown fences: {"strengths":["string"],"weaknesses":["string"],"unresolved_risks":["string"],"advocate_review_points":["string"]}.

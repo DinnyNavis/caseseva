@@ -1,0 +1,135 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: CaseSeva AI Infrastructure - S3 Storage, DynamoDB Table, FastAPI Lambda, HTTP API Gateway (Phase 3)
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    Description: Environment name (e.g. dev, staging, prod)
+  AllowedOrigin:
+    Type: String
+    Default: 'http://127.0.0.1:5173'
+    Description: Allowed CORS Origin URL for frontend (e.g. http://127.0.0.1:5173 for pass 1, or https://main.d12345.amplifyapp.com for pass 2)
+
+Resources:
+  CaseSevaStorageBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'caseseva-storage-${Environment}-${AWS::AccountId}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  CaseSevaDataTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'caseseva-data-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+
+  CaseSevaApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      Name: !Sub 'caseseva-api-${Environment}'
+      CorsConfiguration:
+        AllowOrigins:
+          - !Ref AllowedOrigin
+        AllowHeaders:
+          - Authorization
+          - Content-Type
+          - Accept
+          - X-Admin-Token
+        AllowMethods:
+          - GET
+          - POST
+          - PATCH
+          - PUT
+          - DELETE
+          - OPTIONS
+        AllowCredentials: true
+
+  CaseSevaFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildProperties:
+        Manifest: requirements.txt
+    Properties:
+      FunctionName: !Sub 'caseseva-backend-${Environment}'
+      CodeUri: ../
+      Handler: backend.lambda_handler.handler
+      Runtime: python3.12
+      Timeout: 900
+      MemorySize: 1024
+      EventInvokeConfig:
+        MaximumRetryAttempts: 0
+      Environment:
+        Variables:
+          USE_MOCK_AWS: 'false'
+          USE_REAL_DATABASE: 'true'
+          USE_REAL_STORAGE: 'true'
+          USE_REAL_LLM: 'true'
+          S3_BUCKET_NAME: !Ref CaseSevaStorageBucket
+          DYNAMODB_TABLE_NAME: !Ref CaseSevaDataTable
+          BEDROCK_MODEL_ID: 'au.anthropic.claude-haiku-4-5-20251001-v1:0'
+          SECRET_KEY: 'caseseva-jwt-secret-dev-2026'
+      Events:
+        HttpApiProxy:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref CaseSevaApi
+            Path: /{proxy+}
+            Method: ANY
+        HttpApiRoot:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref CaseSevaApi
+            Path: /
+            Method: ANY
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CaseSevaDataTable
+        - S3CrudPolicy:
+            BucketName: !Ref CaseSevaStorageBucket
+        - Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+                - bedrock:InvokeModelWithResponseStream
+              Resource:
+                - 'arn:aws:bedrock:*::foundation-model/*'
+                - !Sub 'arn:aws:bedrock:*:${AWS::AccountId}:inference-profile/*'
+            - Effect: Allow
+              Action:
+                - lambda:InvokeFunction
+              Resource:
+                - !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:caseseva-backend-${Environment}'
+
+Outputs:
+  StorageBucketName:
+    Description: S3 Storage Bucket Name
+    Value: !Ref CaseSevaStorageBucket
+  DataTableName:
+    Description: DynamoDB Table Name
+    Value: !Ref CaseSevaDataTable
+  ApiEndpoint:
+    Description: HTTP API Gateway Endpoint URL
+    Value: !Sub 'https://${CaseSevaApi}.execute-api.${AWS::Region}.amazonaws.com'
+  LambdaFunctionName:
+    Description: Backend Lambda Function Name
+    Value: !Ref CaseSevaFunction

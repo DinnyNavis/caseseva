@@ -1,0 +1,26 @@
+{
+  "selected": [
+    {
+      "provision_id": "CPA-2-7",
+      "title": "Section 2(7) - Consumer",
+      "explanation": "The laptop was purchased for personal use, so the client fits the consumer definition.",
+      "fact_ids": ["F001"],
+      "source_url": "https://www.indiacode.nic.in/handle/123456789/15256"
+    },
+    {
+      "provision_id": "CPA-2019-SEC-12",
+      "title": "Section 12 - Manner in which complaint shall be made",
+      "explanation": "Hallucinated section 12 not present in consumer legal corpus.",
+      "fact_ids": ["F001"],
+      "source_url": "https://example.com"
+    },
+    {
+      "provision_id": "SOGA-14",
+      "title": "Sale of Goods Act Section 14 - Implied undertakings",
+      "explanation": "Invented Sale of Goods Act provision not in legal corpus.",
+      "fact_ids": ["F003"],
+      "source_url": "https://example.com"
+    }
+  ],
+  "rejected": []
+}

@@ -1,0 +1,1 @@
+Return JSON only matching the complaint draft schema. Use only approved record items. Preserve visible [TO BE COMPLETED: ...] placeholders for missing details. Never invent law, parties, addresses, precedents, or outcomes.

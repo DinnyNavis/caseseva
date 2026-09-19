@@ -1,0 +1,2 @@
+Return only JSON with no prose or markdown fences: {"attacks":["string"],"document_requests":[]}.
+Only return document_requests if specifically needed or requested in prompt. Default document_requests to an empty list [].

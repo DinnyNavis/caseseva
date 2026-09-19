@@ -1,0 +1,1 @@
+Return only JSON with no prose or markdown fences: {"result":"NO_APPARENT_ISSUE","cause_of_action_date":"YYYY-MM-DD","assessment_date":"YYYY-MM-DD","reasoning":"string"}.
