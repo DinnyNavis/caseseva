@@ -19,10 +19,22 @@ async def lifespan(app: FastAPI):
     yield
 
 
+import os
+
+allowed_origins = [
+    "http://127.0.0.1:5173",
+    "http://localhost:5173",
+    "https://main.d15hv8igdcecai.amplifyapp.com",
+]
+env_origin = os.getenv("ALLOWED_ORIGIN")
+if env_origin and env_origin not in allowed_origins:
+    allowed_origins.append(env_origin)
+
 app = FastAPI(title="CaseSeva.ai", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:5173", "http://localhost:5173"],
+    allow_origins=allowed_origins,
+    allow_origin_regex=r"^https://.*\.amplifyapp\.com$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

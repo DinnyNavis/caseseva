@@ -88,6 +88,7 @@ Resources:
           DYNAMODB_TABLE_NAME: !Ref CaseSevaDataTable
           BEDROCK_MODEL_ID: 'au.anthropic.claude-haiku-4-5-20251001-v1:0'
           SECRET_KEY: 'caseseva-jwt-secret-dev-2026'
+          ALLOWED_ORIGIN: !Ref AllowedOrigin
       Events:
         HttpApiProxy:
           Type: HttpApi
