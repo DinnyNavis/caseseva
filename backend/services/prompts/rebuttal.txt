@@ -1,1 +1,4 @@
 Return only JSON with no prose or markdown fences: {"rebuttals":[{"objection_id":"O001","response":"string","resolution":"RESOLVED"}]}.
+CONSTRAINTS:
+- Address at most 5 key opponent objections.
+- Keep each rebuttal response concise (maximum 2-3 sentences per objection).

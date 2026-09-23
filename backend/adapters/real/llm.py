@@ -139,8 +139,17 @@ class RealLLMAdapter(LLMAdapter):
         self.total_input_tokens = 0
         self.total_output_tokens = 0
         self.stage_logs: list[dict[str, Any]] = []
+        self.default_max_tokens = 4000
+        self.stage_max_tokens: dict[str, int] = {
+            "rebuttal": 8000,
+            "claimant_counsel": 6000,
+            "opponent_counsel": 6000,
+            "neutral_evaluation": 6000,
+            "draft_generation": 8000,
+            "report_generation": 8000,
+        }
 
-    def _invoke_bedrock_api(self, prompt: str) -> tuple[str, int, int]:
+    def _invoke_bedrock_api(self, prompt: str, max_tokens: int = 4000) -> tuple[str, int, int, str]:
         max_attempts = 4
 
         # Mode A: Boto3 Bedrock Runtime Client (IAM Role Credentials - Lambda)
@@ -149,7 +158,7 @@ class RealLLMAdapter(LLMAdapter):
             client = boto3.client("bedrock-runtime", region_name=self.region)
             payload = {
                 "anthropic_version": "bedrock-2023-05-31",
-                "max_tokens": 4000,
+                "max_tokens": max_tokens,
                 "messages": [{"role": "user", "content": prompt}],
             }
             body_bytes = json.dumps(payload).encode("utf-8")
@@ -165,12 +174,13 @@ class RealLLMAdapter(LLMAdapter):
                     usage = response_json.get("usage", {})
                     in_tokens = usage.get("input_tokens", 0)
                     out_tokens = usage.get("output_tokens", 0)
+                    stop_reason = response_json.get("stop_reason", "")
                     self.total_input_tokens += in_tokens
                     self.total_output_tokens += out_tokens
-                    logger.info(f"[Bedrock LLM Boto3] Model: {self.model_id} | Input: {in_tokens} | Output: {out_tokens}")
+                    logger.info(f"[Bedrock LLM Boto3] Model: {self.model_id} | Input: {in_tokens} | Output: {out_tokens} | StopReason: {stop_reason}")
                     content_blocks = response_json.get("content", [])
                     raw_text = content_blocks[0].get("text", "") if content_blocks else ""
-                    return raw_text, in_tokens, out_tokens
+                    return raw_text, in_tokens, out_tokens, stop_reason
                 except Exception as exc:
                     if attempt < max_attempts - 1:
                         time.sleep(2 ** (attempt + 1))
@@ -189,7 +199,7 @@ class RealLLMAdapter(LLMAdapter):
 
         payload = {
             "anthropic_version": "bedrock-2023-05-31",
-            "max_tokens": 4000,
+            "max_tokens": max_tokens,
             "messages": [
                 {
                     "role": "user",
@@ -210,14 +220,15 @@ class RealLLMAdapter(LLMAdapter):
                     usage = response_json.get("usage", {})
                     in_tokens = usage.get("input_tokens", 0)
                     out_tokens = usage.get("output_tokens", 0)
+                    stop_reason = response_json.get("stop_reason", "")
                     self.total_input_tokens += in_tokens
                     self.total_output_tokens += out_tokens
-                    logger.info(f"[Bedrock LLM Bearer] Model: {self.model_id} | Input: {in_tokens} | Output: {out_tokens}")
-                    print(f"[Bedrock LLM Bearer] Model: {self.model_id} | Input: {in_tokens} | Output: {out_tokens}")
+                    logger.info(f"[Bedrock LLM Bearer] Model: {self.model_id} | Input: {in_tokens} | Output: {out_tokens} | StopReason: {stop_reason}")
+                    print(f"[Bedrock LLM Bearer] Model: {self.model_id} | Input: {in_tokens} | Output: {out_tokens} | StopReason: {stop_reason}")
 
                     content_blocks = response_json.get("content", [])
                     raw_text = content_blocks[0].get("text", "") if content_blocks else ""
-                    return raw_text, in_tokens, out_tokens
+                    return raw_text, in_tokens, out_tokens, stop_reason
 
             except urllib.error.HTTPError as exc:
                 if exc.code in {429, 503} and attempt < max_attempts - 1:
@@ -253,17 +264,38 @@ class RealLLMAdapter(LLMAdapter):
         model_cls = STAGE_MODELS.get(stage_name)
         schema_json_shape = model_cls.model_json_schema() if model_cls else {}
 
+        max_tokens = schema.get("max_tokens") or self.stage_max_tokens.get(stage_name, self.default_max_tokens)
+
         log_entry: dict[str, Any] = {
             "stage": stage_name,
             "prompt_sent": full_prompt,
             "expected_schema": schema_json_shape,
+            "max_tokens_allocated": max_tokens,
             "attempt_1": None,
             "attempt_2": None,
             "final_status": "PENDING",
         }
 
         # Attempt 1
-        raw_text_1, in_tok_1, out_tok_1 = self._invoke_bedrock_api(full_prompt)
+        raw_text_1, in_tok_1, out_tok_1, stop_reason_1 = self._invoke_bedrock_api(full_prompt, max_tokens=max_tokens)
+
+        # Explicit truncation detection (stop_reason == "max_tokens")
+        if stop_reason_1 == "max_tokens":
+            err_1 = f"Bedrock response truncated for stage '{stage_name}' (stop_reason='max_tokens', output_tokens={out_tok_1}, max_tokens={max_tokens}). Token ceiling hit before complete JSON output."
+            log_entry["attempt_1"] = {
+                "raw": raw_text_1,
+                "cleaned": raw_text_1,
+                "parsed": None,
+                "error": err_1,
+                "input_tokens": in_tok_1,
+                "output_tokens": out_tok_1,
+                "stop_reason": stop_reason_1,
+            }
+            log_entry["final_status"] = "TRUNCATED"
+            log_entry["error"] = err_1
+            self.stage_logs.append(log_entry)
+            raise ValueError(err_1)
+
         cleaned_text_1 = _clean_json_text(raw_text_1)
 
         err_1 = None
@@ -285,6 +317,7 @@ class RealLLMAdapter(LLMAdapter):
             "error": err_1,
             "input_tokens": in_tok_1,
             "output_tokens": out_tok_1,
+            "stop_reason": stop_reason_1,
         }
 
         if err_1 is None and parsed_1 is not None:
@@ -307,7 +340,25 @@ class RealLLMAdapter(LLMAdapter):
             "You MUST output strictly raw, valid, non-empty JSON matching the required schema with no markdown fences, prose, commentary, or extra fields."
         )
 
-        raw_text_2, in_tok_2, out_tok_2 = self._invoke_bedrock_api(corrective_prompt)
+        raw_text_2, in_tok_2, out_tok_2, stop_reason_2 = self._invoke_bedrock_api(corrective_prompt, max_tokens=max_tokens)
+
+        # Explicit truncation detection on retry
+        if stop_reason_2 == "max_tokens":
+            err_2 = f"Bedrock response truncated on retry for stage '{stage_name}' (stop_reason='max_tokens', output_tokens={out_tok_2}, max_tokens={max_tokens}). Token ceiling hit before complete JSON output."
+            log_entry["attempt_2"] = {
+                "raw": raw_text_2,
+                "cleaned": raw_text_2,
+                "parsed": None,
+                "error": err_2,
+                "input_tokens": in_tok_2,
+                "output_tokens": out_tok_2,
+                "stop_reason": stop_reason_2,
+            }
+            log_entry["final_status"] = "TRUNCATED_ON_RETRY"
+            log_entry["error"] = err_2
+            self.stage_logs.append(log_entry)
+            raise ValueError(err_2)
+
         cleaned_text_2 = _clean_json_text(raw_text_2)
 
         err_2 = None
@@ -329,6 +380,7 @@ class RealLLMAdapter(LLMAdapter):
             "error": err_2,
             "input_tokens": in_tok_2,
             "output_tokens": out_tok_2,
+            "stop_reason": stop_reason_2,
         }
 
         if err_2 is None and parsed_2 is not None:

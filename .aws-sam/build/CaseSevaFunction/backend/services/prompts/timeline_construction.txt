@@ -1,3 +1,0 @@
-Return only JSON matching this exact schema, with no prose and no markdown fences:
-{"timeline":[{"event_id":"T001","date":"string","date_uncertain":false,"description":"string","fact_ids":["F001"],"evidence_ids":["E001"],"human_corrected":false}]}
-Use a date marker when the date is uncertain and preserve chronological order.

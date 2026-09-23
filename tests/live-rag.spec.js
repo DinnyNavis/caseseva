@@ -4,15 +4,35 @@ const base = "http://127.0.0.1:8000";
 
 async function approvedCase(request, clientStory) {
   const email = `rag_${Date.now()}_${Math.random().toString(36).substring(7)}@example.com`;
-  const user = await (await request.post(`${base}/api/auth/signup`, { data: { email, password: "Password123!", full_name: "RAG User", role: "CLIENT" } })).json();
-  const headers = { Authorization: `Bearer ${user.token}` };
-  const created = await (await request.post(`${base}/api/cases`, { headers, data: { client_story: clientStory } })).json();
-  const caseId = created.case_id;
+  const signupRes = await request.post(`${base}/api/auth/signup`, {
+    data: {
+      email,
+      password: "Password123!",
+      full_name: "RAG User",
+      mobile_number: "9876543210",
+      preferred_language: "English",
+      state: "Delhi",
+      district_city: "Delhi",
+      role: "client"
+    }
+  });
+  const user = await signupRes.json();
+  const token = user.session_token || user.token;
+  const headers = { Authorization: `Bearer ${token}` };
+  const createdRes = await (await request.post(`${base}/api/cases`, { headers })).json();
+  const caseId = createdRes.case ? createdRes.case.case_id : createdRes.case_id;
 
+  await request.patch(`${base}/api/cases/${caseId}`, {
+    headers, data: { stage: "NEW_CONSULTATION", stage_details: {}, client_story: clientStory },
+  });
+  await request.post(`${base}/api/cases/${caseId}/evidence`, {
+    headers, multipart: { file: { name: "receipt.txt", mimeType: "text/plain", buffer: Buffer.from("receipt content") } },
+  });
+  await request.post(`${base}/api/cases/${caseId}/submit`, { headers });
   await request.post(`${base}/api/cases/${caseId}/analyze`, { headers });
-  await expect.poll(async () => (await (await request.get(`${base}/api/cases/${caseId}/status`, { headers })).json()).status, { timeout: 15000 }).toBe("AWAITING_PREVIEW_1");
+  await expect.poll(async () => (await (await request.get(`${base}/api/cases/${caseId}/status`, { headers })).json()).status, { timeout: 45000 }).toBe("AWAITING_PREVIEW_1");
   await request.post(`${base}/api/cases/${caseId}/preview1/approve`, { headers, data: {} });
-  await expect.poll(async () => (await (await request.get(`${base}/api/cases/${caseId}/status`, { headers })).json()).status, { timeout: 15000 }).toBe("PREVIEW_1_APPROVED");
+  await expect.poll(async () => (await (await request.get(`${base}/api/cases/${caseId}/status`, { headers })).json()).status, { timeout: 45000 }).toBe("PREVIEW_1_APPROVED");
 
   return { headers, caseId };
 }

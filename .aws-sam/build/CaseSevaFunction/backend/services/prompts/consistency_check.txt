@@ -1,1 +1,0 @@
-Return JSON only matching the consistency findings schema. Check parties, amounts, chronology, approved legal citations, annexures, forum, and supported relief. Report PASS or FAIL with an exact location.

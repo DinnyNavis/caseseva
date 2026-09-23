@@ -1,1 +1,0 @@
-Return JSON only matching the annexure index schema. Include only advocate-approved evidence, preserve each E00n identifier, and assign stable Annexure A, B, C labels.

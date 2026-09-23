@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from ..legal_retrieval import LegalRetrievalAdapter
+from ..legal_retrieval import LegalRetrievalAdapter, normalize_domain_to_corpus
 
 
 class MockLegalRetrievalAdapter(LegalRetrievalAdapter):
@@ -10,11 +10,9 @@ class MockLegalRetrievalAdapter(LegalRetrievalAdapter):
         self.corpus_root = Path(corpus_root)
 
     def search(self, query: str, limit: int = 10, domain: str = "consumer") -> list[dict[str, Any]]:
-        norm_domain = domain.lower().split("/")[0].strip()
-        if "labour" in norm_domain or "employment" in norm_domain:
-            norm_domain = "labour"
-        elif "consumer" in norm_domain:
-            norm_domain = "consumer"
+        norm_domain = normalize_domain_to_corpus(domain)
+        if not norm_domain:
+            return []
 
         corpus_file = self.corpus_root / norm_domain / "provisions.json"
         if not corpus_file.exists():

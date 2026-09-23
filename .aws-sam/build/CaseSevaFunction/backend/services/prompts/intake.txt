@@ -1,2 +1,0 @@
-Return only JSON matching this exact schema, with no prose and no markdown fences:
-{"normalized_story":"string","evidence_text":[{"evidence_id":"string","text":"string"}]}

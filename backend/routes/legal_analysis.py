@@ -36,12 +36,14 @@ def get_preview2(case_id: str, request: Request, user: dict = Depends(get_curren
     case = owned(request, case_id, user)
     if case["status"] not in {"AWAITING_PREVIEW_2", "NEEDS_DOCUMENT", "PREVIEW_2_APPROVED", "LEGAL_ANALYSIS_FAILED", "OUT_OF_SCOPE"}:
         raise HTTPException(status_code=409, detail="Preview 2 is not available yet")
+    legal_sections = case.get("legal_sections")
+    rejected = legal_sections.get("rejected", []) if isinstance(legal_sections, dict) else []
     return {
         "status": case["status"],
         "domain": case.get("legal_domain", {}),
         "issues": case.get("legal_issues", []),
         "verified_provisions": case.get("verified_legal_sections", []),
-        "rejected_provisions": case.get("legal_sections", {}).get("rejected", []),
+        "rejected_provisions": rejected,
         "citation_verification": case.get("citation_verification", {}),
         "forum": case.get("forum", {}),
         "limitation": case.get("limitation", {}),

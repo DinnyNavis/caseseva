@@ -1,9 +1,11 @@
+import re
 import threading
 import time
 from typing import Any
 
 from pydantic import ValidationError
 
+from ..adapters.legal_retrieval import normalize_domain_to_corpus
 from ..models.legal import (
     ChallengerOutput,
     CitationOutput,
@@ -196,7 +198,10 @@ def build_legal_prompt(stage: str, current: dict[str, Any]) -> str:
         )
     elif stage == "CLAIMANT_COUNSEL":
         return (
-            f"Develop strong legal arguments supporting the claimant/consumer.\n\n"
+            f"Develop strong, concise legal arguments supporting the claimant/consumer.\n"
+            f"CONSTRAINTS:\n"
+            f"- Provide at most 5 key argument points.\n"
+            f"- Keep each point concise (maximum 2-3 sentences).\n\n"
             f"CLIENT STORY:\n{story}\n\n"
             f"EXTRACTED FACTS:\n{facts_str}\n\n"
             f"LEGAL ISSUES:\n{issues_str}\n\n"
@@ -205,7 +210,10 @@ def build_legal_prompt(stage: str, current: dict[str, Any]) -> str:
         )
     elif stage == "OPPONENT_COUNSEL":
         return (
-            f"Anticipate legal objections and defenses from the opposing party.\n\n"
+            f"Anticipate potential legal objections and defenses from the opposing party.\n"
+            f"CONSTRAINTS:\n"
+            f"- Formulate at most 5 key objections.\n"
+            f"- Keep each objection concise (maximum 2-3 sentences).\n\n"
             f"EXTRACTED FACTS:\n{facts_str}\n\n"
             f"LEGAL ISSUES:\n{issues_str}\n\n"
             f"CLAIMANT ARGUMENTS:\n{claimant_str}"
@@ -219,7 +227,10 @@ def build_legal_prompt(stage: str, current: dict[str, Any]) -> str:
         )
     elif stage == "REBUTTAL":
         return (
-            f"Formulate persuasive rebuttals to address opponent objections.\n\n"
+            f"Formulate persuasive, concise rebuttals to address top opponent objections.\n"
+            f"CONSTRAINTS:\n"
+            f"- Address at most 5 key opponent objections.\n"
+            f"- Keep each rebuttal response concise (maximum 2-3 sentences per objection).\n\n"
             f"CLAIMANT ARGUMENTS:\n{claimant_str}\n\n"
             f"OPPONENT OBJECTIONS:\n{opponent_str}\n\n"
             f"EVIDENCE ATTACKS:\n{challenger_str}"
@@ -306,8 +317,15 @@ def run_legal_pipeline(app, case_id: str, preserve_advocate_review: bool = False
             try:
                 time.sleep(0.05)
                 schema = schema_for(stage)
-                if stage == "DOMAIN_ROUTER" and "[NON_CONSUMER]" in current.get("client_story", ""):
-                    schema["fixture"] = "other_domain"
+                if stage == "DOMAIN_ROUTER":
+                    if "[NON_CONSUMER]" in current.get("client_story", ""):
+                        schema["fixture"] = "other_domain"
+                    elif any(k in current.get("client_story", "").lower() for k in ["salary", "wages", "employment", "labor", "labour"]):
+                        schema["fixture"] = "labor_domain"
+                if stage == "STATUTE_RETRIEVAL" and "[HALLUCINATED_STATUTE]" not in current.get("client_story", ""):
+                    domain_name = str(current.get("legal_domain", {}).get("domain", "")).lower()
+                    if domain_name in {"labor", "labour"} or any(k in current.get("client_story", "").lower() for k in ["salary", "wages", "employment", "labor", "labour"]):
+                        schema["fixture"] = "statute_retrieval_labor"
                 if "[LEGAL_MALFORMED]" in current.get("client_story", "") and stage == "LEGAL_ISSUE_IDENTIFICATION":
                     schema["fixture"] = "malformed"
                 if "[HALLUCINATED_STATUTE]" in current.get("client_story", "") and stage == "STATUTE_RETRIEVAL":
@@ -331,7 +349,7 @@ def run_legal_pipeline(app, case_id: str, preserve_advocate_review: bool = False
                 output = validate_response(stage, response)
                 
                 # Graceful degradation for unsupported domains without verified corpus or retrievable sources
-                if not corpus_candidates and detected_domain.lower() not in {"consumer", "labour", "labour / employment"}:
+                if not corpus_candidates and normalize_domain_to_corpus(detected_domain) is None:
                     if stage == "STATUTE_RETRIEVAL":
                         from ..models.legal import StatuteOutput
                         output = StatuteOutput(selected=[], rejected=[], note=f"No verified statutory sources retrieved for domain: {detected_domain}")
@@ -356,7 +374,7 @@ def run_legal_pipeline(app, case_id: str, preserve_advocate_review: bool = False
                         )
                         if not output.selected:
                             raise ValueError(
-                                "STATUTE_RETRIEVAL grounding filter removed all provisions — the model returned only hallucinated citations."
+                                f"Corpus filter dropped all provisions for domain: {detected_domain}"
                             )
 
                 current = db.get("cases", case_id)
@@ -422,10 +440,12 @@ def run_legal_pipeline(app, case_id: str, preserve_advocate_review: bool = False
                     changes["status"] = "NEEDS_DOCUMENT"
                 db.update("cases", case_id, changes)
                 workflow.advance_run(run["id"])
-                if stage == "DOMAIN_ROUTER" and output.domain.lower() != "consumer":
+                if stage == "DOMAIN_ROUTER" and normalize_domain_to_corpus(output.domain) is None:
                     db.update("cases", case_id, {
                         "status": "OUT_OF_SCOPE",
                         "out_of_scope_message": "This MVP currently supports Consumer matters in depth; an advocate should review this domain.",
+                        "forum": {"forum_family": "UNSUPPORTED_DOMAIN", "commission_level": "No verified forum rules for domain", "territorial_basis": "Address verification required"},
+                        "limitation": {"result": "UNKNOWN", "explanation": "No verified limitation rules for domain"},
                         "version": db.get("cases", case_id).get("version", 1) + 1,
                     })
                     return

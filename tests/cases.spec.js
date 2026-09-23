@@ -3,6 +3,8 @@ import { test, expect } from "@playwright/test";
 const uniqueEmail = () => `case-${Date.now()}-${Math.random().toString(16).slice(2)}@example.com`;
 
 async function signup(page) {
+  await page.goto("/");
+  await page.evaluate(() => localStorage.clear());
   await page.goto("/signup");
   await page.getByLabel("Full name").fill("Case Client");
   await page.getByLabel("Email").fill(uniqueEmail());
@@ -23,6 +25,7 @@ async function startCase(page) {
 async function chooseNewStage(page) {
   await page.getByTestId("stage-NEW_CONSULTATION").click();
   await page.getByRole("button", { name: "Continue" }).click();
+  await page.waitForURL(/\/cases\/[^/]+\/edit$/);
 }
 
 test("creating a case shows it in the dashboard list", async ({ page }) => {
@@ -31,9 +34,11 @@ test("creating a case shows it in the dashboard list", async ({ page }) => {
   await chooseNewStage(page);
   await page.getByLabel("Your story").fill("A landlord has withheld my security deposit after I moved out.");
   await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByTestId("evidence-input").setInputFiles({ name: "receipt.txt", mimeType: "text/plain", buffer: Buffer.from("test") });
   await page.getByRole("button", { name: "Review" }).click();
-  await expect(page.getByText("Upload at least one evidence file before submitting.")).not.toBeVisible();
-  await page.goto("/dashboard");
+  await page.getByRole("button", { name: "Submit case" }).click();
+  await page.waitForURL(/\/cases\/[^\/]+$/);
+  await page.getByRole("link", { name: "Dashboard" }).click();
   await expect(page.getByTestId("case-card")).toContainText("A landlord has withheld my security deposit");
 });
 
@@ -78,7 +83,7 @@ test("story survives reload through draft autosave", async ({ page }) => {
   await chooseNewStage(page);
   const story = "I paid for a service that was never delivered and want a refund.";
   await page.getByLabel("Your story").fill(story);
-  await page.waitForTimeout(400);
+  await expect(page.getByText("Auto-saved to draft")).toBeVisible();
   await page.reload();
   await expect(page.getByLabel("Your story")).toHaveValue(story);
 });
@@ -105,11 +110,13 @@ test("deleted evidence IDs are not reused", async ({ page }) => {
   await chooseNewStage(page);
   await page.getByRole("button", { name: "Continue" }).click();
   await page.getByTestId("evidence-input").setInputFiles({ name: "first.txt", mimeType: "text/plain", buffer: Buffer.from("one") });
+  await expect(page.getByText("E001")).toBeVisible();
   await page.getByTestId("evidence-input").setInputFiles({ name: "second.txt", mimeType: "text/plain", buffer: Buffer.from("two") });
+  await expect(page.getByText("E002")).toBeVisible();
   await page.getByTestId("evidence-card").first().getByRole("button", { name: "Delete" }).click();
+  await expect(page.getByText("E001")).not.toBeVisible();
   await page.getByTestId("evidence-input").setInputFiles({ name: "third.txt", mimeType: "text/plain", buffer: Buffer.from("three") });
   await expect(page.getByText("E003")).toBeVisible();
-  await expect(page.getByText("E001")).not.toBeVisible();
 });
 
 test("unsupported evidence displays a visible error", async ({ page }) => {
@@ -170,4 +177,31 @@ test("a user cannot open another users case", async ({ request }) => {
     headers: { Authorization: `Bearer ${second.session_token}` },
   });
   expect(response.status()).toBe(403);
+});
+
+test("opening /cases/new and leaving without typing anything creates no case", async ({ page }) => {
+  await signup(page);
+  await page.goto("/cases/new");
+  await page.goto("/dashboard");
+
+  await expect(page.getByTestId("case-card")).toHaveCount(0);
+});
+
+test("typing, refreshing, and continuing edits the same case rather than creating a second one", async ({ page }) => {
+  await signup(page);
+  await page.goto("/cases/new");
+  await chooseNewStage(page);
+  await page.waitForURL(/\/cases\/[^/]+\/edit$/);
+
+  const editUrl = page.url();
+
+  await page.getByLabel("Your story").fill("My salary was delayed by two months in August 2026.");
+  await expect(page.getByText("Auto-saved to draft")).toBeVisible();
+
+  await page.reload();
+  expect(page.url()).toBe(editUrl);
+  await expect(page.getByLabel("Your story")).toHaveValue("My salary was delayed by two months in August 2026.");
+
+  await page.getByRole("link", { name: "Dashboard" }).click();
+  await expect(page.getByTestId("case-card")).toHaveCount(1);
 });

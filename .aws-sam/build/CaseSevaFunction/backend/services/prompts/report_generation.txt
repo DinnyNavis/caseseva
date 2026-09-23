@@ -1,1 +1,0 @@
-Return JSON only matching the report document schema. Use only advocate-approved facts, provisions, arguments, evidence, and review notes. Include an AI-assistance disclaimer and never predict success.

@@ -1,6 +1,0 @@
-For each provision in PROVISIONS TO VERIFY, evaluate whether the case facts support it. Output VERIFIED if supported, or REJECTED otherwise.
-You MUST output a decision for every provision listed. Do NOT add decisions for provisions not listed, and do NOT invent provision IDs.
-
-Return only JSON with no prose or markdown fences:
-{"decisions":[{"provision_id":"string","decision":"VERIFIED","reason":"string"}]}
-

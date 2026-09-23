@@ -1,5 +1,6 @@
 import json
 import os
+import time
 from pathlib import Path
 from threading import Lock
 from typing import Any
@@ -13,15 +14,42 @@ class MockDatabaseAdapter(DatabaseAdapter):
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._lock = Lock()
         if not self.path.exists():
-            self.path.write_text(json.dumps({}, indent=2), encoding="utf-8")
+            self._write({})
 
-    def _read(self) -> dict[str, dict[str, dict[str, Any]]]:
-        if not self.path.exists():
-            self.path.write_text(json.dumps({}, indent=2), encoding="utf-8")
-        return json.loads(self.path.read_text(encoding="utf-8"))
+    def _read(self) -> dict[str, dict[str, Any]]:
+        last_err = None
+        for attempt in range(50):
+            try:
+                if self.path.exists():
+                    text = self.path.read_text(encoding="utf-8")
+                    if text.strip():
+                        return json.loads(text)
+                    else:
+                        last_err = ValueError("Database file is empty")
+                else:
+                    if attempt > 3:
+                        self.path.parent.mkdir(parents=True, exist_ok=True)
+                        self.path.write_text("{}", encoding="utf-8")
+                        return {}
+                    last_err = FileNotFoundError("Database file does not exist")
+            except Exception as err:
+                last_err = err
+            time.sleep(0.01)
+        if last_err:
+            print(f"[ERROR MOCK DB READ]: failed to read {self.path}: {last_err}", flush=True)
+            raise RuntimeError(f"Failed to read database: {last_err}")
+        return {}
 
-    def _write(self, data: dict[str, dict[str, dict[str, Any]]]) -> None:
-        self.path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    def _write(self, data: dict[str, dict[str, Any]]) -> None:
+        content = json.dumps(data, indent=2)
+        for attempt in range(50):
+            try:
+                self.path.parent.mkdir(parents=True, exist_ok=True)
+                self.path.write_text(content, encoding="utf-8")
+                return
+            except Exception:
+                time.sleep(0.02)
+        print(f"[ERROR MOCK DB WRITE]: Failed to write database to {self.path}", flush=True)
 
     def create(self, collection: str, record: dict[str, Any]) -> dict[str, Any]:
         record_id = str(record["id"])
@@ -36,13 +64,15 @@ class MockDatabaseAdapter(DatabaseAdapter):
 
     def get(self, collection: str, record_id: str) -> dict[str, Any] | None:
         with self._lock:
-            record = self._read().get(collection, {}).get(record_id)
+            data = self._read()
+            record = data.get(collection, {}).get(record_id)
             return dict(record) if record else None
 
     def update(self, collection: str, record_id: str, changes: dict[str, Any]) -> dict[str, Any]:
         with self._lock:
             data = self._read()
-            record = data.get(collection, {}).get(record_id)
+            bucket = data.get(collection, {})
+            record = bucket.get(record_id)
             if record is None:
                 raise KeyError(record_id)
             record.update(changes)
@@ -52,12 +82,14 @@ class MockDatabaseAdapter(DatabaseAdapter):
     def delete(self, collection: str, record_id: str) -> bool:
         with self._lock:
             data = self._read()
-            deleted = record_id in data.get(collection, {})
+            bucket = data.get(collection, {})
+            deleted = record_id in bucket
             if deleted:
-                del data[collection][record_id]
+                del bucket[record_id]
                 self._write(data)
             return deleted
 
     def list(self, collection: str) -> list[dict[str, Any]]:
         with self._lock:
-            return [dict(record) for record in self._read().get(collection, {}).values()]
+            data = self._read()
+            return [dict(record) for record in data.get(collection, {}).values()]

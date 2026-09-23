@@ -90,17 +90,21 @@ class MockAuthAdapter(AuthAdapter):
 
     def login(self, email: str, password: str) -> dict[str, Any]:
         normalized = email.strip().lower()
-        user = next((item for item in self.database.list("users") if item["email"] == normalized), None)
+        users = self.database.list("users")
+        user = next((item for item in users if item["email"] == normalized), None)
         if user is None:
+            print(f"[DEBUG LOGIN FAIL]: user not found for {normalized}. Total users: {len(users)}, emails: {[u.get('email') for u in users]}", flush=True)
             raise ValueError("Invalid credentials")
         salt, expected = user["password_hash"].split("$", 1)
         actual = self._hash_password(password, salt).split("$", 1)[1]
         if not hmac.compare_digest(actual, expected):
+            print(f"[DEBUG LOGIN FAIL]: password mismatch for {normalized}", flush=True)
             raise ValueError("Invalid credentials")
         return self._issue_session(user)
 
     def _issue_session(self, user: dict[str, Any]) -> dict[str, Any]:
         token = secrets.token_urlsafe(32)
+        print("[DEBUG AUTH SESSION CREATED]:", token, "for user", user["id"])
         self.database.create("sessions", {"id": token, "user_id": user["id"]})
         return {"session_token": token, "user": self._public_user(user)}
 
@@ -117,6 +121,7 @@ class MockAuthAdapter(AuthAdapter):
 
     def get_current_user(self, token: str) -> dict[str, Any] | None:
         session = self.database.get("sessions", token)
+        print("[DEBUG AUTH GET USER]: token=", repr(token), "session=", session)
         if not session:
             return None
         user = self.database.get("users", session["user_id"])

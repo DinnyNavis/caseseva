@@ -192,6 +192,64 @@ def decline_request(case_id: str, request: Request, reason: str | None = None, u
     return {"case": request.app.state.adapters.database.update("cases", case_id, {"status": "PREVIEW_2_APPROVED", "requested_advocate_id": None})}
 
 
+@router.get("/advocate/cases")
+def list_advocate_cases(request: Request, user: dict = Depends(get_current_user)):
+    require_advocate(user)
+    advocate_id = user["id"]
+    
+    requests_list = [
+        item for item in request.app.state.adapters.database.list("advocate_requests")
+        if item.get("advocate_id") == advocate_id
+    ]
+    pending_request_case_ids = {
+        item["case_id"] for item in requests_list if item.get("status") == "PENDING"
+    }
+
+    pending_requests = []
+    under_review = []
+    finalised = []
+    
+    all_cases = request.app.state.adapters.database.list("cases")
+    for case in all_cases:
+        case_id = case.get("case_id") or case.get("id")
+        assigned_id = case.get("assigned_advocate_id") or case.get("advocate_id")
+        requested_id = case.get("requested_advocate_id")
+        status = case.get("status")
+
+        if assigned_id != advocate_id and requested_id != advocate_id and case_id not in pending_request_case_ids:
+            continue
+
+        summary = {
+            "case_id": case_id,
+            "status": status,
+            "created_at": case.get("created_at"),
+            "stage": case.get("stage"),
+            "domain": case.get("legal_domain", {}).get("domain") or case.get("domain"),
+            "sub_domain": case.get("legal_domain", {}).get("sub_domain"),
+            "forum_level": case.get("forum", {}).get("commission_level"),
+            "evidence_count": len(case.get("evidence", [])),
+            "unresolved_risks_count": len(case.get("neutral_evaluation", {}).get("unresolved_risks", [])),
+            "outstanding_items_count": len(outstanding_items(case)),
+            "outstanding_doc_requests_count": len([req for req in case.get("advocate_document_requests", []) if not req.get("resolved")]),
+            "title": (case.get("client_story", "").strip() or "Untitled case")[:80],
+            "preview": case.get("client_story", "").strip()[:140],
+        }
+
+        if status == "AWAITING_ADVOCATE" or (case_id in pending_request_case_ids and status not in {"ADVOCATE_REVIEW", "ADVOCATE_APPROVED"}):
+            pending_requests.append(summary)
+        elif status == "ADVOCATE_REVIEW":
+            under_review.append(summary)
+        elif status in {"ADVOCATE_APPROVED", "DOCUMENTS_READY", "DOCUMENTS_BLOCKED"}:
+            finalised.append(summary)
+
+    return {
+        "pending_requests": pending_requests,
+        "under_review": under_review,
+        "finalised": finalised,
+        "cases": under_review + finalised,
+    }
+
+
 @router.get("/advocate/cases/{case_id}")
 def advocate_case(case_id: str, request: Request, user: dict = Depends(get_current_user)):
     return {"case": accepted_case(request, case_id, user)}
@@ -227,13 +285,24 @@ def change_review_item(case_id: str, kind: str, target_id: str, new_value: Any, 
         changes["verified_legal_sections"] = sections
     elif kind == "argument":
         args = dict(case.get("arguments", {}))
-        rebuttals = []
-        for item in args.get("rebuttal", {}).get("rebuttals", []):
-            if item["objection_id"] == target_id:
+        opponent = dict(args.get("opponent", {}))
+        objections = []
+        for item in opponent.get("objections", []):
+            if item.get("objection_id") == target_id or item.get("id") == target_id:
                 previous = item
                 item = {**item, **new_value}
-            rebuttals.append(item)
-        args.setdefault("rebuttal", {})["rebuttals"] = rebuttals
+            objections.append(item)
+        if previous is not None:
+            opponent["objections"] = objections
+            args["opponent"] = opponent
+        else:
+            rebuttals = []
+            for item in args.get("rebuttal", {}).get("rebuttals", []):
+                if item.get("objection_id") == target_id or item.get("id") == target_id:
+                    previous = item
+                    item = {**item, **new_value}
+                rebuttals.append(item)
+            args.setdefault("rebuttal", {})["rebuttals"] = rebuttals
         changes["arguments"] = args
     elif kind == "forum":
         previous = case.get("forum")

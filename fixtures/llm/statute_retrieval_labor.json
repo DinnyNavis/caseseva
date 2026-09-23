@@ -1,0 +1,40 @@
+{
+  "selected": [
+    {
+      "provision_id": "WAGES-2-K",
+      "title": "Section 2(k) - Definition of employee",
+      "explanation": "The worker was employed on wages by an establishment, fitting the employee definition.",
+      "fact_ids": ["F001"],
+      "source_url": "https://www.indiacode.nic.in/handle/123456789/15598"
+    },
+    {
+      "provision_id": "WAGES-2-Y",
+      "title": "Section 2(y) - Definition of wages",
+      "explanation": "Earned salary constitutes wages under the Code on Wages.",
+      "fact_ids": ["F002"],
+      "source_url": "https://www.indiacode.nic.in/handle/123456789/15598"
+    },
+    {
+      "provision_id": "WAGES-17",
+      "title": "Section 17 - Mode and time limit for payment of wages",
+      "explanation": "Wages were not paid within the mandatory time limit.",
+      "fact_ids": ["F003"],
+      "source_url": "https://www.indiacode.nic.in/handle/123456789/15598"
+    },
+    {
+      "provision_id": "WAGES-18",
+      "title": "Section 18 - Deductions which may be made from wages",
+      "explanation": "No deduction was authorized, making non-payment illegal withholding.",
+      "fact_ids": ["F004"],
+      "source_url": "https://www.indiacode.nic.in/handle/123456789/15598"
+    },
+    {
+      "provision_id": "WAGES-45",
+      "title": "Section 45 - Claims under Code and procedure thereof",
+      "explanation": "Claim application for recovery of unpaid wages before the Gazetted Authority.",
+      "fact_ids": ["F005"],
+      "source_url": "https://www.indiacode.nic.in/handle/123456789/15598"
+    }
+  ],
+  "rejected": []
+}

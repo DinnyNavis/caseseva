@@ -22,7 +22,9 @@ from .real.storage import RealStorageAdapter
 from .real.workflow import RealWorkflowAdapter
 from .real.legal_retrieval import RealLegalRetrievalAdapter
 
-load_dotenv()
+env_keys_before_dotenv = set(os.environ.keys())
+env_vals_before_dotenv = {k: os.environ[k] for k in os.environ}
+load_dotenv(override=False)
 
 
 @dataclass
@@ -37,10 +39,23 @@ class AdapterSet:
 
 
 def load_adapters() -> AdapterSet:
-    use_mock = os.getenv("USE_MOCK_AWS", "true").strip().lower() == "true"
-    use_real_llm = os.getenv("USE_REAL_LLM", "false").strip().lower() == "true"
-    use_real_database = os.getenv("USE_REAL_DATABASE", "false").strip().lower() == "true"
-    use_real_storage = os.getenv("USE_REAL_STORAGE", "false").strip().lower() == "true"
+    if "USE_MOCK_AWS" in env_vals_before_dotenv:
+        use_mock = env_vals_before_dotenv["USE_MOCK_AWS"].strip().lower() == "true"
+    else:
+        use_mock = os.getenv("USE_MOCK_AWS", "true").strip().lower() == "true"
+
+    def is_explicitly_true(key: str) -> bool:
+        if key in env_vals_before_dotenv:
+            return env_vals_before_dotenv[key].strip().lower() == "true"
+        if use_mock:
+            return False
+        return os.getenv(key, "false").strip().lower() == "true"
+
+    use_real_llm = is_explicitly_true("USE_REAL_LLM")
+    use_real_database = is_explicitly_true("USE_REAL_DATABASE")
+    use_real_storage = is_explicitly_true("USE_REAL_STORAGE")
+
+
 
     if use_mock and not (use_real_database or use_real_storage or use_real_llm):
         database = MockDatabaseAdapter()

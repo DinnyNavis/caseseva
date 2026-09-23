@@ -1,1 +1,0 @@
-Return JSON only matching the document type selection schema. Select the Consumer complaint template only when the approved domain is Consumer; otherwise return a clear not-implemented result. Never add legal facts or provisions.

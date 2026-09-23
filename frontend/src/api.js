@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 export const SESSION_KEY = "caseseva_session_token";
 
 export function getToken() {
@@ -18,7 +18,25 @@ async function request(path, options = {}, { redirectOn401 = true } = {}) {
   if (!(options.body instanceof FormData)) headers.set("Content-Type", "application/json");
   const token = getToken();
   if (token) headers.set("Authorization", "Bearer " + token);
-  const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+  
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+  } catch (err) {
+    let detail = `Failed to connect to ${API_BASE_URL}`;
+    try {
+      // Diagnostic check: test with mode 'no-cors' to distinguish dead server from CORS block
+      await fetch(`${API_BASE_URL}/api/health`, { mode: "no-cors" });
+      detail = `Connection to ${API_BASE_URL} blocked by CORS policy. Ensure ${window.location.origin} is added to API Gateway AllowedOrigin.`;
+    } catch {
+      detail = `Backend server not running at ${API_BASE_URL}. Ensure local server is running or check API base URL.`;
+    }
+    const error = new Error(detail);
+    error.isNetworkError = true;
+    error.baseUrl = API_BASE_URL;
+    throw error;
+  }
+
   const contentType = response.headers.get("content-type") || "";
   const body = contentType.includes("application/json") ? await response.json() : null;
   if (response.status === 401 && redirectOn401) {
@@ -50,7 +68,7 @@ export const login = (payload) =>
 
 export const logout = () => request("/api/auth/logout", { method: "POST" });
 
-export const getMe = () => request("/api/auth/me");
+export const getMe = () => request("/api/auth/me", {}, { redirectOn401: false });
 
 export const updateProfile = (payload) =>
   request("/api/auth/me", {
@@ -107,12 +125,24 @@ export const cancelAdvocateRequest = (caseId) => request(`/api/cases/${caseId}/c
 export const verifyAdvocate = (advocateId, status) => request(`/api/admin/advocates/${advocateId}/verification`, { method: "POST", headers: { "X-Admin-Token": "caseseva-admin" }, body: JSON.stringify({ status }) });
 export const listAdminAdvocates = () => request("/api/admin/advocates", { headers: { "X-Admin-Token": "caseseva-admin" } });
 export const getAdvocateRequests = () => request("/api/advocate/requests");
+export const getAdvocateCases = () => request("/api/advocate/cases");
 export const acceptAdvocateRequest = (caseId) => request(`/api/advocate/requests/${caseId}/accept`, { method: "POST" });
 export const declineAdvocateRequest = (caseId, reason = "") => request(`/api/advocate/requests/${caseId}/decline?reason=${encodeURIComponent(reason)}`, { method: "POST" });
 export const getAdvocateCase = (caseId) => request(`/api/advocate/cases/${caseId}`);
 export const approveAdvocateFact = (caseId, factId) => request(`/api/advocate/cases/${caseId}/facts/${factId}/approve`, { method: "POST" });
 export const removeAdvocateProvision = (caseId, provisionId) => request(`/api/advocate/cases/${caseId}/provisions/${provisionId}/remove`, { method: "POST" });
 export const approveAdvocateProvision = (caseId, provisionId) => request(`/api/advocate/cases/${caseId}/provisions/${provisionId}/approve`, { method: "POST" });
+export const editAdvocateFact = (caseId, factId, payload) => request(`/api/advocate/cases/${caseId}/facts/${factId}`, { method: "PATCH", body: JSON.stringify(payload) });
+export const editAdvocateProvision = (caseId, provisionId, payload) => request(`/api/advocate/cases/${caseId}/provisions/${provisionId}`, { method: "PATCH", body: JSON.stringify(payload) });
+export const editAdvocateForum = (caseId, payload) => request(`/api/advocate/cases/${caseId}/forum`, { method: "PATCH", body: JSON.stringify(payload) });
+export const approveAdvocateForum = (caseId) => request(`/api/advocate/cases/${caseId}/forum/approve`, { method: "POST" });
+export const editAdvocateLimitation = (caseId, payload) => request(`/api/advocate/cases/${caseId}/limitation`, { method: "PATCH", body: JSON.stringify(payload) });
+export const approveAdvocateLimitation = (caseId) => request(`/api/advocate/cases/${caseId}/limitation/approve`, { method: "POST" });
+export const editAdvocateArgument = (caseId, objectionId, payload) => request(`/api/advocate/cases/${caseId}/arguments/${objectionId}`, { method: "PATCH", body: JSON.stringify(payload) });
+export const approveAdvocateArgument = (caseId, objectionId) => request(`/api/advocate/cases/${caseId}/arguments/${objectionId}/approve`, { method: "POST" });
+export const approveAdvocateEvidence = (caseId, evidenceId) => request(`/api/advocate/cases/${caseId}/evidence/${evidenceId}/approve`, { method: "POST" });
+export const removeAdvocateEvidence = (caseId, evidenceId) => request(`/api/advocate/cases/${caseId}/evidence/${evidenceId}/remove`, { method: "POST" });
+export const createAdvocateDocumentRequest = (caseId, payload) => request(`/api/advocate/cases/${caseId}/document-requests`, { method: "POST", body: JSON.stringify(payload) });
 export const saveAdvocateNote = (caseId, note) => request(`/api/advocate/cases/${caseId}/review-note`, { method: "POST", body: JSON.stringify({ note }) });
 export const finalizeAdvocateCase = (caseId) => request(`/api/cases/${caseId}/advocate/finalize`, { method: "POST" });
 export const generateDocuments = (caseId) => request(`/api/cases/${caseId}/documents/generate`, { method: "POST" });

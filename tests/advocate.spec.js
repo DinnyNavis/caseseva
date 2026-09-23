@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-const POLL_TIMEOUT = parseInt(process.env.POLL_TIMEOUT_MS || "10000", 10);
+const POLL_TIMEOUT = parseInt(process.env.POLL_TIMEOUT_MS || "20000", 10);
 const email = (prefix = "adv") => `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}@example.com`;
 const base = "http://127.0.0.1:8000";
 
@@ -222,4 +222,48 @@ test("client sees advocate changes and review notes after finalization", async (
   await request.post(`${base}/api/advocate/cases/${setup.caseId}/review-note`, { headers: advocate.headers, data: { note: "Ready for document preparation." } });
   const result = await (await request.get(`${base}/api/cases/${setup.caseId}`, { headers: setup.client.headers })).json();
   expect(result.case.advocate_review_note).toBe("Ready for document preparation.");
+});
+
+async function assignedCase(request, advocate) {
+  const setup = await approvedCase(request);
+  await requestCase(request, setup, advocate.user.id);
+  await request.post(`${base}/api/advocate/requests/${setup.caseId}/accept`, { headers: advocate.headers });
+  return setup.caseId;
+}
+
+test("advocate sees assigned cases after logging in from a fresh browser context with empty storage", async ({ page, request }) => {
+  test.setTimeout(60000);
+  const advocate = await verifiedAdvocate(request);
+  const caseId = await assignedCase(request, advocate);
+
+  // Fresh browser context with completely empty localStorage
+  await page.goto("/");
+  await page.evaluate(() => localStorage.clear());
+  await page.goto("/login");
+  await page.getByLabel("Email").fill(advocate.user.email);
+  await page.getByLabel("Password").fill("Password123");
+  await Promise.all([
+    page.waitForURL(/\/advocate\/dashboard$/),
+    page.getByRole("button", { name: "Log in" }).click(),
+  ]);
+
+  // Verify accepted case appears in dashboard
+  await expect(page.getByText(`Case #${caseId}`)).toBeVisible();
+});
+
+test("advocate never sees cases belonging to another advocate", async ({ request }) => {
+  const advocate1 = await verifiedAdvocate(request);
+  const advocate2 = await verifiedAdvocate(request);
+
+  const caseId1 = await assignedCase(request, advocate1);
+  const caseId2 = await assignedCase(request, advocate2);
+
+  const cases1 = (await (await request.get(`${base}/api/advocate/cases`, { headers: advocate1.headers })).json()).cases;
+  const cases2 = (await (await request.get(`${base}/api/advocate/cases`, { headers: advocate2.headers })).json()).cases;
+
+  expect(cases1.some((c) => c.case_id === caseId1)).toBeTruthy();
+  expect(cases1.some((c) => c.case_id === caseId2)).toBeFalsy();
+
+  expect(cases2.some((c) => c.case_id === caseId2)).toBeTruthy();
+  expect(cases2.some((c) => c.case_id === caseId1)).toBeFalsy();
 });

@@ -22,6 +22,10 @@ class MockLLMAdapter(LLMAdapter):
             return json.loads((self.fixture_root / "statute_retrieval_hallucinated.json").read_text(encoding="utf-8"))
         if schema.get("fixture") == "other_domain":
             return json.loads((self.fixture_root / "domain_router_other.json").read_text(encoding="utf-8"))
+        if schema.get("fixture") == "labor_domain":
+            return json.loads((self.fixture_root / "domain_router_labor.json").read_text(encoding="utf-8"))
+        if schema.get("fixture") == "statute_retrieval_labor":
+            return json.loads((self.fixture_root / "statute_retrieval_labor.json").read_text(encoding="utf-8"))
 
         stage = str(schema.get("stage", "default")).lower().replace(" ", "_")
         fixture = self.fixture_root / f"{stage}.json"

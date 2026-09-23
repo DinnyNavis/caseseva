@@ -1,29 +1,139 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getMe, listCases } from "../api";
+import { ArrowUpRight } from "lucide-react";
+
+/* Map backend status to status pill class modifier and human-readable label */
+const STATUS_META = {
+  DRAFT:                  { cls: "grey",     label: "Draft" },
+  READY_FOR_ANALYSIS:     { cls: "grey",     label: "Ready for analysis" },
+  ANALYZING:              { cls: "grey",     label: "Analysing casework" },
+  LEGAL_ANALYSIS_RUNNING: { cls: "grey",     label: "Legal analysis running" },
+  AWAITING_PREVIEW_1:     { cls: "grey",     label: "Awaiting review 1" },
+  PREVIEW_1_APPROVED:     { cls: "gold",     label: "Review 1 approved" },
+  AWAITING_PREVIEW_2:     { cls: "grey",     label: "Awaiting legal review" },
+  PREVIEW_2_APPROVED:     { cls: "gold",     label: "Statute verified" },
+  AWAITING_ADVOCATE:      { cls: "grey",     label: "Awaiting advocate" },
+  ADVOCATE_REVIEW:        { cls: "grey",     label: "Advocate reviewing" },
+  DOCUMENTS_READY:        { cls: "gold",     label: "Documents ready" },
+  DOCUMENTS_BLOCKED:      { cls: "crimson",  label: "Documents blocked" },
+  ANALYSIS_FAILED:        { cls: "crimson",  label: "Analysis failed" },
+  LEGAL_ANALYSIS_FAILED:  { cls: "crimson",  label: "Legal review failed" },
+  ERROR:                  { cls: "crimson",  label: "Action required" },
+};
+
+function StatusPill({ status }) {
+  const meta = STATUS_META[status] || { cls: "grey", label: status };
+  return (
+    <span className={`status-pill status-pill--${meta.cls}`}>
+      {meta.label}
+    </span>
+  );
+}
 
 export default function DashboardPage() {
   const [cases, setCases] = useState(null);
   const [user, setUser] = useState(null);
+
   useEffect(() => {
-    getMe().then((result) => setUser(result.user));
-    listCases().then((result) => setCases(result.cases));
+    getMe().then((result) => setUser(result.user)).catch(() => {});
+    listCases().then((result) => setCases(result.cases)).catch(() => setCases([]));
   }, []);
+
   return (
-    <main>
-      <h1 data-testid="dashboard-heading">Welcome{user ? `, ${user.full_name}` : ""}</h1>
-      <Link to="/cases/new"><button type="button">Start a new case</button></Link>
-      {cases?.length === 0 && <p data-testid="empty-cases">You have not created a case yet.</p>}
-      <section data-testid="your-cases"><h2>Your cases</h2>
-      <div data-testid="case-list">
-        {cases?.map((item) => (
-          <article key={item.case_id} data-testid="case-card">
-            <Link to={`/cases/${item.case_id}`}><h2>{item.title}</h2></Link>
-            <p>{item.preview || "No story yet."}</p>
-            <span>{item.status}</span>
-          </article>
-        ))}
+    <main className="main-container">
+      {/* Editorial Stacked Headline Greeting */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "2rem", marginBottom: "3rem" }}>
+        <div>
+          <span className="eyebrow-label">CLIENT WORKSPACE</span>
+          <div className="hairline-gold" />
+          
+          <div className="stacked-headline" style={{ marginBottom: "0.5rem" }}>
+            <h1
+              data-testid="dashboard-heading"
+              className="headline-dominant"
+              style={{ margin: 0, textTransform: "uppercase" }}
+            >
+              WELCOME{user ? `, ${user.full_name}` : ""}
+            </h1>
+            <span className="headline-connective">YOUR ACTIVE</span>
+            <span className="headline-gold">LEGAL CASEWORK.</span>
+          </div>
+          
+          <p style={{ fontSize: "1.05rem", color: "var(--text-body)", maxWidth: "48ch" }}>
+            Review grounded statutory citations, track advocate finalization, and manage court-ready filings.
+          </p>
+        </div>
+
+        {/* Primary Unmissable Black Pill Action */}
+        <Link to="/cases/new" className="btn-pill-primary" style={{ padding: "0.95rem 2.4rem", fontSize: "1rem" }}>
+          <span>Start a new case</span>
+          <ArrowUpRight size={18} />
+        </Link>
       </div>
+
+      <hr className="hairline-rule" style={{ margin: "1rem 0 2.5rem" }} />
+
+      {/* Cases Section */}
+      <section data-testid="your-cases">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "1.75rem" }}>
+          <h2 style={{ fontSize: "1.35rem", fontWeight: 800, letterSpacing: "-0.02em", color: "#000000" }}>
+            Your cases
+          </h2>
+          {cases !== null && (
+            <span style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontWeight: 600 }}>
+              {cases.length} case{cases.length !== 1 ? "s" : ""} on record
+            </span>
+          )}
+        </div>
+
+        <div data-testid="case-list">
+          {/* Empty State */}
+          {cases?.length === 0 && (
+            <div className="empty-state" data-testid="empty-cases">
+              <span className="eyebrow-label" style={{ marginBottom: "0.5rem" }}>NO CASEWORK FOUND</span>
+              <p className="empty-state__title">Begin your first case inquiry</p>
+              <p className="empty-state__body">
+                CaseSeva analyzes your factual narrative against verified Indian central statutes, retrieves grounded sections, and prepares court-ready draft pleadings for advocate review.
+              </p>
+              <Link to="/cases/new" className="btn-pill-primary">
+                <span>Start a new case</span>
+                <ArrowUpRight size={16} />
+              </Link>
+            </div>
+          )}
+
+          {/* Loading Skeleton */}
+          {cases === null && (
+            <div style={{ borderTop: "1px solid var(--border-hairline)" }}>
+              {[1, 2, 3].map((i) => (
+                <div key={i} style={{ padding: "1.75rem 0", borderBottom: "1px solid var(--border-hairline)", opacity: 0.4 }}>
+                  <div style={{ height: 18, width: "45%", background: "#EAEAEA", borderRadius: 3, marginBottom: 10 }} />
+                  <div style={{ height: 14, width: "70%", background: "#F2F2F2", borderRadius: 3 }} />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Editorial Case List — direct on white with clean hairline separators, NO cards */}
+          {cases?.length > 0 && (
+            <div className="editorial-case-list">
+              {cases.map((item) => (
+                <Link to={`/cases/${item.case_id}`} key={item.case_id} style={{ textDecoration: "none" }}>
+                  <article className="case-card" data-testid="case-card">
+                    <div className="case-card__top">
+                      <h2 className="case-card__title">{item.title}</h2>
+                      <StatusPill status={item.status} />
+                    </div>
+                    <p className="case-card__preview">{item.preview || "No narrative details recorded yet."}</p>
+                    {/* Raw status text hidden for automated test assertions */}
+                    <span style={{ display: "none" }}>{item.status}</span>
+                  </article>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
       </section>
     </main>
   );

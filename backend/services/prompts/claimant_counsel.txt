@@ -1,1 +1,4 @@
 Return only JSON with no prose or markdown fences: {"points":["string"]}.
+CONSTRAINTS:
+- Provide at most 5 key argument points.
+- Keep each point concise (maximum 2-3 sentences).

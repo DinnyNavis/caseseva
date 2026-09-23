@@ -85,7 +85,7 @@ def generate_report(case: dict[str, Any], data: dict[str, Any]) -> tuple[str, st
 <h2>Timeline</h2><ol>{_li([f'{x.get("date", "Date pending")}: {x.get("description", "")}' for x in data["timeline"]])}</ol>
 <h2>Detected case type</h2><p>{_esc(data["legal_domain"].get("domain"))} / {_esc(data["legal_domain"].get("sub_domain"))}</p>
 <h2>Legal issues</h2><ul>{_li([f'{x.get("issue_id")}: {x.get("question")}' for x in data["legal_issues"]])}</ul>
-<h2>Approved provisions</h2><ul>{_li([f'{x.get("title")} — {x.get("explanation")} [Act Source: {x.get("source_url")}]' for x in sections])}</ul>
+<h2>Approved provisions</h2><ul>{_li([f'{x.get("provision_id")} — {x.get("title")} — {x.get("explanation")} [Act Source: {x.get("source_url")}]' for x in sections])}</ul>
 <h2>Evidence-to-issue matrix</h2><ul>{_li([f'{x.get("issue_id")}: {x.get("status")} — {x.get("note")}' for x in data["mapping"]])}</ul>
 <h2>Jurisdiction and limitation</h2><p>{_esc(data["forum"])}</p><p>{_esc(data["limitation"])}</p>
 <h2>Claimant arguments</h2><ul>{_li(case.get("arguments", {}).get("claimant", {}).get("points", []))}</ul>
@@ -97,6 +97,8 @@ def generate_report(case: dict[str, Any], data: dict[str, Any]) -> tuple[str, st
 
 def generate_complaint(case: dict[str, Any], data: dict[str, Any]) -> tuple[str, str]:
     forum_level = data["forum"].get("commission_level") or "[TO BE COMPLETED: District Consumer Disputes Redressal Commission]"
+    if data["forum"].get("address_verification_required"):
+        forum_level = "[TO BE COMPLETED: EXACT DISTRICT COMMISSION AFTER ADDRESS VERIFICATION]"
     parties = data["parties"]
     provision_refs = ", ".join(f"{p.get('provision_id')} ({p.get('title')})" for p in data["provisions"]) or "Consumer Protection Act, 2019"
     grounds = "".join(f"<p>{i}. {_esc(p.get('explanation'))} ({_esc(p.get('provision_id'))})</p>" for i, p in enumerate(data["provisions"], 1))
@@ -117,6 +119,8 @@ def generate_complaint(case: dict[str, Any], data: dict[str, Any]) -> tuple[str,
 
 def generate_labour_complaint(case: dict[str, Any], data: dict[str, Any]) -> tuple[str, str]:
     authority = data["forum"].get("commission_level") or "[TO BE COMPLETED: Gazetted Authority under Section 45, Code on Wages 2019]"
+    if data["forum"].get("address_verification_required"):
+        authority = "[TO BE COMPLETED: EXACT LABOUR AUTHORITY AFTER ADDRESS VERIFICATION]"
     parties = data["parties"]
     provision_refs = ", ".join(f"{p.get('provision_id')} ({p.get('title')})" for p in data["provisions"]) or "Code on Wages 2019 (Section 45)"
     grounds = "".join(f"<p>{i}. {_esc(p.get('explanation'))} ({_esc(p.get('provision_id'))})</p>" for i, p in enumerate(data["provisions"], 1))
@@ -135,13 +139,32 @@ def generate_labour_complaint(case: dict[str, Any], data: dict[str, Any]) -> tup
     return html_doc, re.sub(r"<[^>]+>", "", html_doc)
 
 
+def _extract_section_nums(provision_id: str) -> set[str]:
+    nums = {provision_id} if provision_id else set()
+    if not provision_id:
+        return nums
+    matches = re.findall(r"\d+", provision_id)
+    if len(matches) > 1 and matches[0] in {"2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026"}:
+        matches = matches[1:]
+    for m in matches:
+        nums.add(m)
+    if len(matches) >= 2:
+        nums.add(f"{matches[0]}({matches[1]})")
+        nums.add(f"{matches[0]}.{matches[1]}")
+        nums.add(f"{matches[0]}-{matches[1]}")
+    for match in re.finditer(r"(\d+(?:\(\d+\))?)", provision_id):
+        nums.add(match.group(1))
+    return nums
+
+
 def consistency(case: dict[str, Any], data: dict[str, Any], draft_html: str) -> list[dict[str, Any]]:
     findings = []
     def check(name: str, passed: bool, location: str, detail: str):
         findings.append({"check": name, "result": "PASS" if passed else "FAIL", "location": location, "detail": detail})
     approved_sections = {p.get("provision_id") for p in data["provisions"]}
-    cited = set(re.findall(r"\b(?:Section|Sec\.)\s*([0-9]+(?:\([0-9]+\))?)", draft_html, re.I))
-    section_numbers = {re.search(r"(\d+(?:\(\d+\))?)", p.get("provision_id", "")).group(1) for p in data["provisions"] if re.search(r"(\d+(?:\(\d+\))?)", p.get("provision_id", ""))}
+    grounds_text = " ".join(f"{p.get('title', '')} {p.get('explanation', '')} {p.get('provision_id', '')}" for p in data["provisions"])
+    cited = set(re.findall(r"\b(?:Section|Sec\.)\s*([0-9]+(?:\([0-9]+\))?)", grounds_text, re.I))
+    section_numbers = {num for p in data["provisions"] for num in _extract_section_nums(p.get("provision_id", ""))}
     check("approved_provisions_only", all(p.get("provision_id") in approved_sections for p in data["provisions"]), "approved provisions", "Every provision is advocate-approved and citation-verified.")
     check("cited_sections_exist", cited.issubset(section_numbers), "draft grounds", f"Unknown cited sections: {sorted(cited - section_numbers)}")
     annexure_labels = {x["label"] for x in data["annexures"]}
@@ -165,7 +188,7 @@ TEMPLATE_REGISTRY = {
 
 def build_documents(case: dict[str, Any]) -> dict[str, Any]:
     raw_domain = case.get("legal_domain", {}).get("domain", "Consumer").lower().split("/")[0].strip()
-    norm_domain = "labour" if ("labour" in raw_domain or "employment" in raw_domain) else ("consumer" if "consumer" in raw_domain else raw_domain)
+    norm_domain = "labour" if any(k in raw_domain for k in ["labour", "labor", "employment", "wages"]) else ("consumer" if "consumer" in raw_domain else raw_domain)
     
     if norm_domain not in TEMPLATE_REGISTRY:
         domain_name = case.get("legal_domain", {}).get("domain", raw_domain)

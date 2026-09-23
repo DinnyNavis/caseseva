@@ -94,6 +94,8 @@ def run_pipeline(app, case_id: str, retry_failed: bool = False, requested_stages
                     response = llm.generate(prompt, schema)
                 output = validate_response(stage, response)
                 current = db.get("cases", case_id)
+                if not current:
+                    return
                 changes: dict[str, Any] = {"version": current.get("version", 1) + 1}
                 if stage == "INTAKE":
                     changes["intake"] = output.model_dump()
@@ -119,13 +121,13 @@ def run_pipeline(app, case_id: str, retry_failed: bool = False, requested_stages
             except Exception as exc:
                 import traceback
                 traceback.print_exc()
-                current = db.get("cases", case_id)
+                current = db.get("cases", case_id) or {}
                 statuses = dict(current.get("stage_statuses", {}))
                 statuses[stage] = "FAILED"
                 db.update("cases", case_id, {"stage_statuses": statuses, "analysis_error": {"stage": stage, "message": str(exc)}, "status": "ANALYSIS_FAILED", "version": current.get("version", 1) + 1})
                 return
         current = db.get("cases", case_id)
-        if all(current.get("stage_statuses", {}).get(stage) == "COMPLETED" for stage in selected):
+        if current and all(current.get("stage_statuses", {}).get(stage) == "COMPLETED" for stage in selected):
             db.update("cases", case_id, {"status": "AWAITING_PREVIEW_1", "version": current.get("version", 1) + 1})
     except Exception as exc:
         # Top-level catch-all: if anything fails before/outside the stage loop,

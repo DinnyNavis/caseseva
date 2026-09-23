@@ -1,6 +1,0 @@
-Select only from the CANDIDATE PROVISIONS listed above. Do NOT recall, invent, or output any provisions from your internal memory.
-Use the exact provision_id, title, and source_url from the candidate list. Justify each selected provision against specific facts from the dispute. Leave "rejected" as an empty list.
-
-Return only JSON with no prose or markdown fences:
-{"selected":[{"provision_id":"string","title":"string","explanation":"string","fact_ids":["F001"],"source_url":"https://example"}],"rejected":[]}
-

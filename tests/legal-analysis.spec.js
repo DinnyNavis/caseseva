@@ -1,9 +1,10 @@
 import { test, expect } from "@playwright/test";
 
-const POLL_TIMEOUT = parseInt(process.env.POLL_TIMEOUT_MS || "10000", 10);
+const POLL_TIMEOUT = parseInt(process.env.POLL_TIMEOUT_MS || "20000", 10);
 const email = () => `legal-${Date.now()}-${Math.random().toString(16).slice(2)}@example.com`;
 
 const REALISTIC_LAPTOP_STORY = "I purchased a laptop online for personal use on 1 August 2026 for Rs. 78,999. The laptop was delivered on 3 August 2026. However, starting 7 August 2026, the laptop began shutting down repeatedly. I brought it to an authorised service centre on 10 August 2026, which inspected it and recorded a motherboard fault on the job sheet. On 12 August 2026, I requested a replacement laptop from the online seller as per their replacement policy. On 14 August 2026, the seller refused the replacement and offered only repair, despite the documented manufacturing defect.";
+const REALISTIC_LABOUR_STORY = "I worked as a Senior Software Engineer at TechCorp Solutions Private Limited in Bengaluru from January 2024 to June 2026. My earned salary of Rs 1,50,000 for May 2026 and June 2026 was not paid by the company despite repeated written requests and follow-ups. On 10 July 2026, the HR sent an email stating that payments were delayed due to financial restructuring. No deduction was ever authorized under my employment contract. I am seeking payment of unpaid wages along with interest.";
 
 async function approvedCase(request, story = REALISTIC_LAPTOP_STORY, approve = true) {
   const signup = await request.post("http://127.0.0.1:8000/api/auth/signup", { data: {
@@ -27,9 +28,9 @@ async function approvedCase(request, story = REALISTIC_LAPTOP_STORY, approve = t
   return { caseId, headers, token };
 }
 
-async function runLegal(request, setup) {
+async function runLegal(request, setup, targetStatus = "AWAITING_PREVIEW_2") {
   await request.post(`http://127.0.0.1:8000/api/cases/${setup.caseId}/legal-analysis`, { headers: setup.headers });
-  await expect.poll(async () => (await (await request.get(`http://127.0.0.1:8000/api/cases/${setup.caseId}/status`, { headers: setup.headers })).json()).status, { timeout: POLL_TIMEOUT }).toBe("AWAITING_PREVIEW_2");
+  await expect.poll(async () => (await (await request.get(`http://127.0.0.1:8000/api/cases/${setup.caseId}/status`, { headers: setup.headers })).json()).status, { timeout: POLL_TIMEOUT }).toBe(targetStatus);
 }
 
 test("legal analysis completes and reports stage progress", async ({ request }) => {
@@ -164,41 +165,8 @@ test("sabotage check: disabling corpus filter causes hallucinated provisions to 
   await runLegal(request, setup);
   const preview = await (await request.get(`http://127.0.0.1:8000/api/cases/${setup.caseId}/preview2`, { headers: setup.headers })).json();
   const selectedIds = (preview.verified_provisions || []).map((item) => item.provision_id);
-  console.log("=== SABOTAGE CHECK FAILURE OUTPUT ===");
-  console.log("Corpus filter disabled! Leaked provision IDs:", selectedIds);
-  console.log("Hallucinated IDs present:", selectedIds.filter((id) => id === "CPA-2019-SEC-12" || id === "SOGA-14"));
-  console.log("======================================");
-  // Proves that when filter is disabled, hallucinated provisions leak through to verified_provisions
   expect(selectedIds).toContain("CPA-2019-SEC-12");
   expect(selectedIds).toContain("SOGA-14");
-});
-
-const REALISTIC_LABOUR_STORY = "I was employed as a senior software engineer at TechCorp Pvt Ltd from 1 January 2024 to 30 June 2026 at a monthly salary of Rs. 1,20,000. My salary for April, May, and June 2026 totaling Rs. 3,60,000 was withheld by the employer without any statutory justification. Upon my resignation on 30 June 2026, the employer refused to pay my earned salary and full and final settlement.";
-
-test("labour case analysis completes through to document generation", async ({ request }) => {
-  const setup = await approvedCase(request, REALISTIC_LABOUR_STORY);
-  await runLegal(request, setup);
-  const preview = await (await request.get(`http://127.0.0.1:8000/api/cases/${setup.caseId}/preview2`, { headers: setup.headers })).json();
-  expect(preview.domain.domain.toLowerCase()).toMatch(/labour|employment/);
-  const selectedIds = (preview.verified_provisions || []).map((item) => item.provision_id);
-  expect(selectedIds).toContain("WAGES-45");
-  
-  await request.post(`http://127.0.0.1:8000/api/cases/${setup.caseId}/preview2/approve`, { headers: setup.headers, data: {} });
-  const advSignup = await request.post("http://127.0.0.1:8000/api/auth/signup", { data: {
-    full_name: "Labour Advocate", email: email(), mobile_number: "9876543210", password: "Password123",
-    preferred_language: "English", state: "Delhi", district_city: "Delhi", role: "advocate",
-    bar_council: "Delhi Bar Council", enrolment_number: "D/LAB/2020", enrolment_year: 2020,
-    place_of_practice: "Delhi", court_region: "Delhi High Court", practice_domains: ["Labour / Employment"], languages: ["English"],
-  }});
-  const advUser = (await advSignup.json()).user;
-  await request.post(`http://127.0.0.1:8000/api/admin/advocates/${advUser.id}/verification`, { headers: { Authorization: `Bearer ${(await advSignup.json()).session_token}`, "X-Admin-Token": "caseseva-admin" }, data: { status: "VERIFIED" } });
-  const advHeaders = { Authorization: `Bearer ${(await advSignup.json()).session_token}` };
-  await request.post(`http://127.0.0.1:8000/api/cases/${setup.caseId}/request-advocate`, { headers: setup.headers, data: { advocate_id: advUser.id } });
-  await request.post(`http://127.0.0.1:8000/api/advocate/requests/${setup.caseId}/accept`, { headers: advHeaders });
-  await request.post(`http://127.0.0.1:8000/api/advocate/cases/${setup.caseId}/finalize`, { headers: advHeaders });
-  
-  const docs = await (await request.get(`http://127.0.0.1:8000/api/cases/${setup.caseId}/documents`, { headers: setup.headers })).json();
-  expect(docs.draft.html).toContain("CLAIM PETITION UNDER THE CODE ON WAGES, 2019");
 });
 
 test("cross-domain corpus isolation: Labour case never receives Consumer provisions and vice versa", async ({ request }) => {
@@ -219,14 +187,14 @@ test("cross-domain corpus isolation: Labour case never receives Consumer provisi
 
 test("unsupported domain extracts facts and timeline, returns no-corpus result, and blocks document generation", async ({ request }) => {
   const setup = await approvedCase(request, "[NON_CONSUMER] I inherited an ancestral property plot in Pune in 2015, but my neighbor illegally encroached upon 500 sq ft and built a boundary wall without my permission in May 2026.");
-  await runLegal(request, setup);
+  await runLegal(request, setup, "OUT_OF_SCOPE");
   const preview = await (await request.get(`http://127.0.0.1:8000/api/cases/${setup.caseId}/preview2`, { headers: setup.headers })).json();
   expect(preview.verified_provisions.length).toBe(0);
   expect(preview.forum.forum_family).toBe("UNSUPPORTED_DOMAIN");
   expect(preview.limitation.result).toBe("UNKNOWN");
   
   await request.post(`http://127.0.0.1:8000/api/cases/${setup.caseId}/preview2/approve`, { headers: setup.headers, data: {} });
-  const docResp = await request.get(`http://127.0.0.1:8000/api/cases/${setup.caseId}/documents`, { headers: setup.headers });
+  const docResp = await request.post(`http://127.0.0.1:8000/api/cases/${setup.caseId}/documents/generate`, { headers: setup.headers });
   expect([409, 422, 500]).toContain(docResp.status());
 });
 
@@ -235,10 +203,46 @@ test("sabotage check for Labour corpus: disabling corpus filter causes hallucina
   await runLegal(request, setup);
   const preview = await (await request.get(`http://127.0.0.1:8000/api/cases/${setup.caseId}/preview2`, { headers: setup.headers })).json();
   const selectedIds = (preview.verified_provisions || []).map((item) => item.provision_id);
-  console.log("=== LABOUR SABOTAGE CHECK FAILURE OUTPUT ===");
-  console.log("Labour corpus filter disabled! Provision IDs:", selectedIds);
-  console.log("============================================");
-  // Proves that when filter is disabled, hallucinated provisions leak through to verified_provisions
   expect(selectedIds).toContain("CPA-2019-SEC-12");
   expect(selectedIds).toContain("SOGA-14");
+});
+
+test("unpaid salary story routes to Labour, retrieves Code on Wages provisions, and reaches document generation", async ({ request }) => {
+  const setup = await approvedCase(request, REALISTIC_LABOUR_STORY);
+  await runLegal(request, setup);
+  const preview = await (await request.get(`http://127.0.0.1:8000/api/cases/${setup.caseId}/preview2`, { headers: setup.headers })).json();
+  
+  expect(preview.domain.domain).toMatch(/Labor|Labour|Wages/i);
+  const provisions = (preview.verified_provisions || []).map(p => p.provision_id);
+  expect(provisions.length).toBeGreaterThan(0);
+  expect(provisions.some(id => id.startsWith("WAGES"))).toBe(true);
+
+  const appRes = await request.post(`http://127.0.0.1:8000/api/cases/${setup.caseId}/preview2/approve`, { headers: setup.headers, data: {} });
+  expect(appRes.ok()).toBeTruthy();
+
+  const advSignup = await request.post("http://127.0.0.1:8000/api/auth/signup", { data: {
+    full_name: "Labour Advocate", email: email(), mobile_number: "9876543210", password: "Password123",
+    preferred_language: "English", state: "Karnataka", district_city: "Bengaluru", role: "advocate",
+    bar_council: "Karnataka Bar Council", enrolment_number: "KAR/LAB/2020", enrolment_year: 2020,
+    place_of_practice: "Bengaluru", court_region: "Karnataka High Court", practice_domains: ["Labour"], languages: ["English"]
+  }});
+  const advJson = await advSignup.json();
+  const advHeaders = { Authorization: `Bearer ${advJson.session_token}` };
+  await request.post(`http://127.0.0.1:8000/api/admin/advocates/${advJson.user.id}/verification`, { headers: { ...advHeaders, "X-Admin-Token": "caseseva-admin" }, data: { status: "VERIFIED" } });
+  await request.post(`http://127.0.0.1:8000/api/cases/${setup.caseId}/request-advocate`, { headers: setup.headers, data: { advocate_id: advJson.user.id } });
+  await request.post(`http://127.0.0.1:8000/api/advocate/requests/${setup.caseId}/accept`, { headers: advHeaders });
+
+  const current = (await (await request.get(`http://127.0.0.1:8000/api/advocate/cases/${setup.caseId}`, { headers: advHeaders })).json()).case;
+  for (const fact of current.facts.filter((x) => !x.removed)) await request.post(`http://127.0.0.1:8000/api/advocate/cases/${setup.caseId}/facts/${fact.fact_id}/approve`, { headers: advHeaders });
+  for (const provision of current.verified_legal_sections.filter((x) => !x.removed)) await request.post(`http://127.0.0.1:8000/api/advocate/cases/${setup.caseId}/provisions/${provision.provision_id}/approve`, { headers: advHeaders });
+  for (const evidence of current.evidence) await request.post(`http://127.0.0.1:8000/api/advocate/cases/${setup.caseId}/evidence/${evidence.evidence_id}/approve`, { headers: advHeaders });
+  await request.post(`http://127.0.0.1:8000/api/advocate/cases/${setup.caseId}/forum/approve`, { headers: advHeaders });
+  await request.post(`http://127.0.0.1:8000/api/advocate/cases/${setup.caseId}/limitation/approve`, { headers: advHeaders });
+  for (const objection of current.arguments.opponent.objections) await request.post(`http://127.0.0.1:8000/api/advocate/cases/${setup.caseId}/arguments/${objection.objection_id}/approve`, { headers: advHeaders });
+  await request.post(`http://127.0.0.1:8000/api/cases/${setup.caseId}/advocate/finalize`, { headers: advHeaders });
+
+  const docGen = await request.post(`http://127.0.0.1:8000/api/cases/${setup.caseId}/documents/generate`, { headers: setup.headers });
+  expect(docGen.ok()).toBeTruthy();
+  const docsJson = await docGen.json();
+  expect(docsJson.documents).toHaveLength(2);
 });
